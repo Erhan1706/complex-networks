@@ -1,6 +1,6 @@
 """
 Overnight SI and SIR simulation on BIG MATRIX dataset.
-Run on remote high-end PC.
+Run on remote PC.
 
 Usage:
     python run_overnight.py
