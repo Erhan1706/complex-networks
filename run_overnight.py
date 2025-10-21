@@ -32,10 +32,11 @@ DATA_FILE = 'data/raw/matrix.csv'  # BIG matrix
 RESULTS_DIR = 'results'
 BETA = 0.3
 GAMMA = 0.1
-NUM_RUNS_PER_NODE = 30  # More runs for better statistics
+NUM_RUNS_PER_NODE = 10  # Runs per node for statistics
 MAX_STEPS_SI = 50
 MAX_STEPS_SIR = 100
 SIMILARITY_THRESHOLD = 0.3  # Only connect users with similarity >= this
+SAMPLE_SIZE = 1000  # Number of nodes to simulate (set to None for all nodes)
 NUM_PROCESSES = max(1, cpu_count() - 1)  # Use all cores except one
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -232,6 +233,16 @@ if __name__ == '__main__':
     log(f"   ✓ Centrality computed")
     log(f"   Time: {time.time() - start_time:.1f}s")
 
+    # Sample nodes if requested
+    if SAMPLE_SIZE is not None and SAMPLE_SIZE < len(users):
+        log(f"\n   Sampling {SAMPLE_SIZE} nodes from {len(users)} total nodes...")
+        np.random.seed(42)  # For reproducibility
+        sampled_users = np.random.choice(users, size=SAMPLE_SIZE, replace=False).tolist()
+        log(f"   ✓ Sampled {len(sampled_users)} nodes")
+    else:
+        sampled_users = users
+        log(f"\n   Using all {len(users)} nodes (no sampling)")
+
     # ============================================================================
     # SI MODEL
     # ============================================================================
@@ -240,7 +251,7 @@ if __name__ == '__main__':
     log("="*70)
 
     start_time = time.time()
-    log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
+    log(f"   Running {len(sampled_users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
     log(f"   Using {NUM_PROCESSES} parallel processes")
 
     # Create partial function with fixed parameters
@@ -252,8 +263,8 @@ if __name__ == '__main__':
     with Pool(processes=NUM_PROCESSES) as pool:
         # Use imap for progress tracking
         results = list(tqdm(
-            pool.imap(process_func, users),
-            total=len(users),
+            pool.imap(process_func, sampled_users),
+            total=len(sampled_users),
             desc="SI Progress"
         ))
 
@@ -263,7 +274,7 @@ if __name__ == '__main__':
 
         # Log progress
         elapsed = time.time() - start_time
-        log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
+        log(f"   ✓ Completed {len(sampled_users)} nodes in {elapsed/60:.1f} minutes")
 
     si_df = pd.DataFrame.from_dict(si_influence, orient='index')
     si_df.index.name = 'user_id'
@@ -281,7 +292,7 @@ if __name__ == '__main__':
     log("="*70)
 
     start_time = time.time()
-    log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
+    log(f"   Running {len(sampled_users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
     log(f"   Using {NUM_PROCESSES} parallel processes")
 
     # Create partial function with fixed parameters
@@ -293,8 +304,8 @@ if __name__ == '__main__':
     with Pool(processes=NUM_PROCESSES) as pool:
         # Use imap for progress tracking
         results = list(tqdm(
-            pool.imap(process_func, users),
-            total=len(users),
+            pool.imap(process_func, sampled_users),
+            total=len(sampled_users),
             desc="SIR Progress"
         ))
 
@@ -304,7 +315,7 @@ if __name__ == '__main__':
 
         # Log progress
         elapsed = time.time() - start_time
-        log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
+        log(f"   ✓ Completed {len(sampled_users)} nodes in {elapsed/60:.1f} minutes")
 
     sir_df = pd.DataFrame.from_dict(sir_influence, orient='index')
     sir_df.index.name = 'user_id'
