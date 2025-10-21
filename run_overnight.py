@@ -22,6 +22,8 @@ from tqdm import tqdm
 import os
 import time
 from datetime import datetime
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 # ============================================================================
 # CONFIGURATION
@@ -33,6 +35,8 @@ GAMMA = 0.1
 NUM_RUNS_PER_NODE = 30  # More runs for better statistics
 MAX_STEPS_SI = 50
 MAX_STEPS_SIR = 100
+SIMILARITY_THRESHOLD = 0.3  # Only connect users with similarity >= this
+NUM_PROCESSES = max(1, cpu_count() - 1)  # Use all cores except one
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -45,80 +49,9 @@ def log(msg):
     log_file.write(full_msg + '\n')
     log_file.flush()
 
-log("="*70)
-log("OVERNIGHT SI/SIR SIMULATION - BIG MATRIX")
-log("="*70)
-log(f"Data file: {DATA_FILE}")
-log(f"Parameters: β={BETA}, γ={GAMMA}, runs={NUM_RUNS_PER_NODE}")
-log(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-log("="*70)
-
 # ============================================================================
-# LOAD NETWORK
+# SIMULATION FUNCTIONS (defined at module level for multiprocessing)
 # ============================================================================
-start_time = time.time()
-log("\n1. Loading data and building network...")
-
-try:
-    interactions = pd.read_csv(DATA_FILE)
-    log(f"   Loaded {len(interactions):,} interactions")
-except Exception as e:
-    log(f"   ERROR loading data: {e}")
-    log("   Exiting.")
-    exit(1)
-
-log(f"   Unique users: {interactions['user_id'].nunique():,}")
-log(f"   Unique videos: {interactions['video_id'].nunique():,}")
-
-log("   Creating user-video matrix...")
-user_video_matrix = interactions.pivot_table(
-    index='user_id',
-    columns='video_id',
-    values='watch_ratio',
-    fill_value=0
-)
-log(f"   Matrix shape: {user_video_matrix.shape[0]:,} × {user_video_matrix.shape[1]:,}")
-
-log("   Computing similarity matrix...")
-similarity_matrix = cosine_similarity(user_video_matrix.values)
-similarity_df = pd.DataFrame(
-    similarity_matrix,
-    index=user_video_matrix.index,
-    columns=user_video_matrix.index
-)
-
-log("   Building graph...")
-G = nx.Graph()
-users = user_video_matrix.index.tolist()
-G.add_nodes_from(users)
-
-for i, user_i in enumerate(users):
-    if i % 100 == 0:
-        log(f"   Adding edges: {i}/{len(users)} users processed")
-    for j, user_j in enumerate(users[i+1:], start=i+1):
-        sim = similarity_df.loc[user_i, user_j]
-        G.add_edge(user_i, user_j, weight=sim)
-
-mean_weight = np.mean([d['weight'] for u, v, d in G.edges(data=True)])
-log(f"   ✓ Network built: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
-log(f"   Mean similarity: {mean_weight:.4f}")
-log(f"   Density: {nx.density(G):.4f}")
-log(f"   Time: {time.time() - start_time:.1f}s")
-
-# Compute centrality
-log("\n2. Computing centrality measures...")
-start_time = time.time()
-strength = dict(G.degree(weight='weight'))
-pagerank = nx.pagerank(G, weight='weight')
-log(f"   ✓ Centrality computed")
-log(f"   Time: {time.time() - start_time:.1f}s")
-
-# ============================================================================
-# SI MODEL
-# ============================================================================
-log("\n" + "="*70)
-log("3. RUNNING SI MODEL")
-log("="*70)
 
 def run_si(G, seed, beta, max_steps):
     infected = {seed}
@@ -165,39 +98,12 @@ def measure_si_influence(G, seed, beta, num_runs, max_steps):
         'final_size': np.mean(final_sizes),
     }
 
-start_time = time.time()
-log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
-log(f"   Estimated time: {len(users) * NUM_RUNS_PER_NODE * 0.01 / 60:.0f} minutes")
-
-si_influence = {}
-for idx, node in enumerate(tqdm(users, desc="SI Progress")):
-    si_influence[node] = {
-        **measure_si_influence(G, node, BETA, NUM_RUNS_PER_NODE, MAX_STEPS_SI),
-        'strength': strength[node],
-        'pagerank': pagerank[node],
-    }
-
-    # Progress updates every 100 nodes
-    if (idx + 1) % 100 == 0:
-        elapsed = time.time() - start_time
-        rate = (idx + 1) / elapsed
-        remaining = (len(users) - idx - 1) / rate
-        log(f"   Progress: {idx+1}/{len(users)} ({100*(idx+1)/len(users):.1f}%) | ETA: {remaining/60:.1f} min")
-
-si_df = pd.DataFrame.from_dict(si_influence, orient='index')
-si_df.index.name = 'user_id'
-si_df = si_df.sort_values('time_to_50')
-
-si_df.to_csv(f'{RESULTS_DIR}/big_matrix_si_influence.csv')
-log(f"   ✓ SI results saved: {RESULTS_DIR}/big_matrix_si_influence.csv")
-log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
-
-# ============================================================================
-# SIR MODEL
-# ============================================================================
-log("\n" + "="*70)
-log("4. RUNNING SIR MODEL")
-log("="*70)
+def process_si_node(node, G, strength, pagerank, beta, num_runs, max_steps):
+    """Wrapper function for parallel processing"""
+    result = measure_si_influence(G, node, beta, num_runs, max_steps)
+    result['strength'] = strength[node]
+    result['pagerank'] = pagerank[node]
+    return node, result
 
 def run_sir(G, seed, beta, gamma, max_steps):
     infected = {seed}
@@ -241,24 +147,163 @@ def measure_sir_influence(G, seed, beta, gamma, num_runs, max_steps):
         'attack_rate': np.mean(outbreaks) / G.number_of_nodes(),
     }
 
+def process_sir_node(node, G, strength, pagerank, beta, gamma, num_runs, max_steps):
+    """Wrapper function for parallel processing"""
+    result = measure_sir_influence(G, node, beta, gamma, num_runs, max_steps)
+    result['strength'] = strength[node]
+    result['pagerank'] = pagerank[node]
+    return node, result
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+
+log("="*70)
+log("OVERNIGHT SI/SIR SIMULATION - BIG MATRIX")
+log("="*70)
+log(f"Data file: {DATA_FILE}")
+log(f"Parameters: β={BETA}, γ={GAMMA}, runs={NUM_RUNS_PER_NODE}")
+log(f"Similarity threshold: {SIMILARITY_THRESHOLD}")
+log(f"Parallel processes: {NUM_PROCESSES} (out of {cpu_count()} CPUs)")
+log(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+log("="*70)
+
+# ============================================================================
+# LOAD NETWORK
+# ============================================================================
+start_time = time.time()
+log("\n1. Loading data and building network...")
+
+try:
+    interactions = pd.read_csv(DATA_FILE)
+    log(f"   Loaded {len(interactions):,} interactions")
+except Exception as e:
+    log(f"   ERROR loading data: {e}")
+    log("   Exiting.")
+    exit(1)
+
+log(f"   Unique users: {interactions['user_id'].nunique():,}")
+log(f"   Unique videos: {interactions['video_id'].nunique():,}")
+
+log("   Creating user-video matrix...")
+user_video_matrix = interactions.pivot_table(
+    index='user_id',
+    columns='video_id',
+    values='watch_ratio',
+    fill_value=0
+)
+log(f"   Matrix shape: {user_video_matrix.shape[0]:,} × {user_video_matrix.shape[1]:,}")
+
+log("   Computing similarity matrix...")
+similarity_matrix = cosine_similarity(user_video_matrix.values)
+similarity_df = pd.DataFrame(
+    similarity_matrix,
+    index=user_video_matrix.index,
+    columns=user_video_matrix.index
+)
+
+log("   Building graph...")
+G = nx.Graph()
+users = user_video_matrix.index.tolist()
+G.add_nodes_from(users)
+
+edge_count = 0
+for i, user_i in enumerate(users):
+    if i % 100 == 0:
+        log(f"   Adding edges: {i}/{len(users)} users processed ({edge_count:,} edges so far)")
+    for j, user_j in enumerate(users[i+1:], start=i+1):
+        sim = similarity_df.loc[user_i, user_j]
+        if sim >= SIMILARITY_THRESHOLD:  # Only add edge if similarity is high enough
+            G.add_edge(user_i, user_j, weight=sim)
+            edge_count += 1
+
+mean_weight = np.mean([d['weight'] for u, v, d in G.edges(data=True)])
+log(f"   ✓ Network built: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+log(f"   Mean similarity: {mean_weight:.4f}")
+log(f"   Density: {nx.density(G):.4f}")
+log(f"   Time: {time.time() - start_time:.1f}s")
+
+# Compute centrality
+log("\n2. Computing centrality measures...")
+start_time = time.time()
+strength = dict(G.degree(weight='weight'))
+pagerank = nx.pagerank(G, weight='weight')
+log(f"   ✓ Centrality computed")
+log(f"   Time: {time.time() - start_time:.1f}s")
+
+# ============================================================================
+# SI MODEL
+# ============================================================================
+log("\n" + "="*70)
+log("3. RUNNING SI MODEL")
+log("="*70)
+
 start_time = time.time()
 log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
-log(f"   Estimated time: {len(users) * NUM_RUNS_PER_NODE * 0.01 / 60:.0f} minutes")
+log(f"   Using {NUM_PROCESSES} parallel processes")
 
+# Create partial function with fixed parameters
+process_func = partial(process_si_node, G=G, strength=strength, pagerank=pagerank,
+                       beta=BETA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SI)
+
+# Run in parallel
+si_influence = {}
+with Pool(processes=NUM_PROCESSES) as pool:
+    # Use imap for progress tracking
+    results = list(tqdm(
+        pool.imap(process_func, users),
+        total=len(users),
+        desc="SI Progress"
+    ))
+
+    # Convert to dictionary
+    for node, result in results:
+        si_influence[node] = result
+
+    # Log progress
+    elapsed = time.time() - start_time
+    log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
+
+si_df = pd.DataFrame.from_dict(si_influence, orient='index')
+si_df.index.name = 'user_id'
+si_df = si_df.sort_values('time_to_50')
+
+si_df.to_csv(f'{RESULTS_DIR}/big_matrix_si_influence.csv')
+log(f"   ✓ SI results saved: {RESULTS_DIR}/big_matrix_si_influence.csv")
+log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
+
+# ============================================================================
+# SIR MODEL
+# ============================================================================
+log("\n" + "="*70)
+log("4. RUNNING SIR MODEL")
+log("="*70)
+
+start_time = time.time()
+log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
+log(f"   Using {NUM_PROCESSES} parallel processes")
+
+# Create partial function with fixed parameters
+process_func = partial(process_sir_node, G=G, strength=strength, pagerank=pagerank,
+                       beta=BETA, gamma=GAMMA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SIR)
+
+# Run in parallel
 sir_influence = {}
-for idx, node in enumerate(tqdm(users, desc="SIR Progress")):
-    sir_influence[node] = {
-        **measure_sir_influence(G, node, BETA, GAMMA, NUM_RUNS_PER_NODE, MAX_STEPS_SIR),
-        'strength': strength[node],
-        'pagerank': pagerank[node],
-    }
+with Pool(processes=NUM_PROCESSES) as pool:
+    # Use imap for progress tracking
+    results = list(tqdm(
+        pool.imap(process_func, users),
+        total=len(users),
+        desc="SIR Progress"
+    ))
 
-    # Progress updates every 100 nodes
-    if (idx + 1) % 100 == 0:
-        elapsed = time.time() - start_time
-        rate = (idx + 1) / elapsed
-        remaining = (len(users) - idx - 1) / rate
-        log(f"   Progress: {idx+1}/{len(users)} ({100*(idx+1)/len(users):.1f}%) | ETA: {remaining/60:.1f} min")
+    # Convert to dictionary
+    for node, result in results:
+        sir_influence[node] = result
+
+    # Log progress
+    elapsed = time.time() - start_time
+    log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
 
 sir_df = pd.DataFrame.from_dict(sir_influence, orient='index')
 sir_df.index.name = 'user_id'
@@ -297,6 +342,7 @@ NETWORK PROPERTIES:
 PARAMETERS:
   Beta (β):           {BETA}
   Gamma (γ):          {GAMMA}
+  Similarity thresh:  {SIMILARITY_THRESHOLD}
   Runs per node:      {NUM_RUNS_PER_NODE}
 
 SI MODEL RESULTS:
