@@ -1,0 +1,67 @@
+
+================================================================================
+OVERNIGHT SIMULATION RESULTS - BIG MATRIX
+================================================================================
+Completed: 2025-10-21 19:53:05
+
+PARAMETERS:
+  Beta:               0.3
+  Gamma:              0.1
+  Similarity thresh:  0.3
+  Runs per node:      10
+
+SI MODEL RESULTS:
+  Metric:             Time to 50% infection
+  Fastest spreader:   User 4127 (t50=1.00)
+  Slowest spreader:   User 6783 (t50=6.30)
+
+  Correlations:
+    Strength:         0.0787 (negative = faster spreading)
+    PageRank:         0.3499
+
+  Top 10 fastest spreaders:
+         time_to_50  strength  pagerank
+user_id                                
+4127            1.0  0.000000  0.000023
+5200            1.0  0.000000  0.000023
+2431            1.0  0.000000  0.000023
+994             1.0  0.000000  0.000023
+3431            1.0  0.000000  0.000023
+2338            1.0  0.000000  0.000023
+5060            1.0  0.360705  0.000023
+4306            1.0  0.000000  0.000023
+3279            1.0  0.000000  0.000023
+6255            1.0  0.906505  0.000072
+
+SIR MODEL RESULTS:
+  Metric:             Final outbreak size
+  Largest outbreak:   User 2718 (size=5789.9, rate=80.7%)
+  Smallest outbreak:  User 5998 (size=1.0, rate=0.0%)
+  Mean attack rate:   58.52%
+
+  Correlations:
+    Strength:         0.4467
+    PageRank:         0.4707
+
+  Top 10 largest outbreaks:
+         final_outbreak  attack_rate     strength  pagerank
+user_id                                                    
+2718             5789.9     0.806842    22.409127  0.000133
+3290             5788.0     0.806577    66.684211  0.000061
+5251             5784.7     0.806118   560.289977  0.000135
+5294             5784.4     0.806076  1112.044652  0.000247
+6126             5782.8     0.805853   989.084667  0.000221
+1024             5781.7     0.805700   581.185418  0.000144
+2885             5780.8     0.805574  1229.622632  0.000277
+2446             5780.1     0.805477    38.796331  0.000031
+1862             5779.7     0.805421   154.026744  0.000055
+4087             5779.5     0.805393  1160.391337  0.000262
+
+FILES SAVED:
+  - results/big_matrix_si_influence.csv
+  - results/big_matrix_sir_influence.csv
+  - results/big_matrix_summary.txt
+  - results/big_matrix_plots.png
+  - results/big_matrix_log.txt
+
+================================================================================
