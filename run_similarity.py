@@ -29,9 +29,11 @@ from functools import partial
 # CONFIGURATION
 # ============================================================================
 DATA_FILE = 'data/raw/matrix.csv'  # BIG matrix
-RESULTS_DIR = 'results'
-BETA = 0.3
-GAMMA = 0.1
+# Create timestamped results directory
+TIMESTAMP = datetime.now().strftime('%Y%m%d_%H%M%S')
+RESULTS_DIR = f'results/run_{TIMESTAMP}'
+BETA = 0.2  # Changed from 0.3
+GAMMA = 0.15  # Changed from 0.1
 NUM_RUNS_PER_NODE = 10  # Runs per node for statistics
 MAX_STEPS_SI = 50
 MAX_STEPS_SIR = 100
@@ -107,8 +109,13 @@ def process_si_node(node, G, strength, pagerank, beta, num_runs, max_steps):
     return node, result
 
 def run_sir(G, seed, beta, gamma, max_steps):
+    """Run SIR simulation, return S, I, R counts over time."""
     infected = {seed}
     recovered = set()
+
+    S_counts = [G.number_of_nodes() - 1]
+    I_counts = [1]
+    R_counts = [0]
 
     for t in range(max_steps):
         # Recovery
@@ -130,22 +137,59 @@ def run_sir(G, seed, beta, gamma, max_steps):
 
         infected.update(new_infected)
 
+        # Track
+        S_counts.append(G.number_of_nodes() - len(infected) - len(recovered))
+        I_counts.append(len(infected))
+        R_counts.append(len(recovered))
+
         if len(infected) == 0:
             break
 
-    return len(recovered)
+    return S_counts, I_counts, R_counts
 
 def measure_sir_influence(G, seed, beta, gamma, num_runs, max_steps):
-    outbreaks = []
+    """Measure extended influence metrics for a seed node."""
+    final_outbreak_sizes = []
+    peak_infections = []
+    epidemic_durations = []
+    times_to_peak = []
+    R0_values = []
+    early_growth_rates = []
+
+    threshold_epidemic = G.number_of_nodes() * 0.1  # 10% of network
 
     for _ in range(num_runs):
-        outbreak = run_sir(G, seed, beta, gamma, max_steps)
-        outbreaks.append(outbreak)
+        S, I, R = run_sir(G, seed, beta, gamma, max_steps)
+
+        # Existing metrics
+        final_outbreak_sizes.append(R[-1])
+        peak_infections.append(max(I))
+        epidemic_durations.append(len(I))
+        times_to_peak.append(I.index(max(I)))
+
+        # R0 (new infections in first step)
+        R0_values.append(I[1] - I[0] if len(I) > 1 else 0)
+
+        # Early growth rate (exponential fit to first 5 steps)
+        if len(I) >= 5:
+            early_I = I[1:6]
+            if all(x > 0 for x in early_I):
+                try:
+                    growth_rate = np.polyfit(range(5), np.log(early_I), 1)[0]
+                    early_growth_rates.append(growth_rate)
+                except:
+                    pass  # Skip if polyfit fails
 
     return {
-        'final_outbreak': np.mean(outbreaks),
-        'std_outbreak': np.std(outbreaks),
-        'attack_rate': np.mean(outbreaks) / G.number_of_nodes(),
+        'final_outbreak': np.mean(final_outbreak_sizes),
+        'std_outbreak': np.std(final_outbreak_sizes),
+        'attack_rate': np.mean(final_outbreak_sizes) / G.number_of_nodes(),
+        'epidemic_probability': sum(1 for x in final_outbreak_sizes if x > threshold_epidemic) / num_runs,
+        'peak_infection': np.mean(peak_infections),
+        'time_to_peak': np.mean(times_to_peak),
+        'duration': np.mean(epidemic_durations),
+        'R0': np.mean(R0_values),
+        'growth_rate': np.mean(early_growth_rates) if early_growth_rates else 0.0,
     }
 
 def process_sir_node(node, G, strength, pagerank, beta, gamma, num_runs, max_steps):
@@ -374,20 +418,22 @@ if __name__ == '__main__':
       Largest outbreak:   User {sir_df.index[0]} (size={sir_df.iloc[0]['final_outbreak']:.1f}, rate={sir_df.iloc[0]['attack_rate']*100:.1f}%)
       Smallest outbreak:  User {sir_df.index[-1]} (size={sir_df.iloc[-1]['final_outbreak']:.1f}, rate={sir_df.iloc[-1]['attack_rate']*100:.1f}%)
       Mean attack rate:   {sir_df['attack_rate'].mean()*100:.2f}%
+      Mean R0:            {sir_df['R0'].mean():.2f}
+      Mean epidemic prob: {sir_df['epidemic_probability'].mean()*100:.1f}%
 
       Correlations:
         Strength:         {sir_corr_strength:.4f}
         PageRank:         {sir_corr_pagerank:.4f}
 
       Top 10 largest outbreaks:
-    {sir_df.head(10)[['final_outbreak', 'attack_rate', 'strength', 'pagerank']].to_string()}
+    {sir_df.head(10)[['final_outbreak', 'attack_rate', 'R0', 'epidemic_probability', 'strength']].to_string()}
 
     FILES SAVED:
-      - results/big_matrix_si_influence.csv
-      - results/big_matrix_sir_influence.csv
-      - results/big_matrix_summary.txt
-      - results/big_matrix_plots.png
-      - results/big_matrix_log.txt
+      - {RESULTS_DIR}/big_matrix_si_influence.csv
+      - {RESULTS_DIR}/big_matrix_sir_influence.csv
+      - {RESULTS_DIR}/big_matrix_summary.txt
+      - {RESULTS_DIR}/big_matrix_plots.png
+      - {RESULTS_DIR}/big_matrix_log.txt
 
     ================================================================================
     """
