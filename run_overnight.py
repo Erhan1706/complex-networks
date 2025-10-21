@@ -158,281 +158,282 @@ def process_sir_node(node, G, strength, pagerank, beta, gamma, num_runs, max_ste
 # MAIN EXECUTION
 # ============================================================================
 
-log("="*70)
-log("OVERNIGHT SI/SIR SIMULATION - BIG MATRIX")
-log("="*70)
-log(f"Data file: {DATA_FILE}")
-log(f"Parameters: β={BETA}, γ={GAMMA}, runs={NUM_RUNS_PER_NODE}")
-log(f"Similarity threshold: {SIMILARITY_THRESHOLD}")
-log(f"Parallel processes: {NUM_PROCESSES} (out of {cpu_count()} CPUs)")
-log(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-log("="*70)
+if __name__ == '__main__':
+    log("="*70)
+    log("OVERNIGHT SI/SIR SIMULATION - BIG MATRIX")
+    log("="*70)
+    log(f"Data file: {DATA_FILE}")
+    log(f"Parameters: β={BETA}, γ={GAMMA}, runs={NUM_RUNS_PER_NODE}")
+    log(f"Similarity threshold: {SIMILARITY_THRESHOLD}")
+    log(f"Parallel processes: {NUM_PROCESSES} (out of {cpu_count()} CPUs)")
+    log(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log("="*70)
 
-# ============================================================================
-# LOAD NETWORK
-# ============================================================================
-start_time = time.time()
-log("\n1. Loading data and building network...")
+    # ============================================================================
+    # LOAD NETWORK
+    # ============================================================================
+    start_time = time.time()
+    log("\n1. Loading data and building network...")
 
-try:
-    interactions = pd.read_csv(DATA_FILE)
-    log(f"   Loaded {len(interactions):,} interactions")
-except Exception as e:
-    log(f"   ERROR loading data: {e}")
-    log("   Exiting.")
-    exit(1)
+    try:
+        interactions = pd.read_csv(DATA_FILE)
+        log(f"   Loaded {len(interactions):,} interactions")
+    except Exception as e:
+        log(f"   ERROR loading data: {e}")
+        log("   Exiting.")
+        exit(1)
 
-log(f"   Unique users: {interactions['user_id'].nunique():,}")
-log(f"   Unique videos: {interactions['video_id'].nunique():,}")
+    log(f"   Unique users: {interactions['user_id'].nunique():,}")
+    log(f"   Unique videos: {interactions['video_id'].nunique():,}")
 
-log("   Creating user-video matrix...")
-user_video_matrix = interactions.pivot_table(
-    index='user_id',
-    columns='video_id',
-    values='watch_ratio',
-    fill_value=0
-)
-log(f"   Matrix shape: {user_video_matrix.shape[0]:,} × {user_video_matrix.shape[1]:,}")
+    log("   Creating user-video matrix...")
+    user_video_matrix = interactions.pivot_table(
+        index='user_id',
+        columns='video_id',
+        values='watch_ratio',
+        fill_value=0
+    )
+    log(f"   Matrix shape: {user_video_matrix.shape[0]:,} × {user_video_matrix.shape[1]:,}")
 
-log("   Computing similarity matrix...")
-similarity_matrix = cosine_similarity(user_video_matrix.values)
-similarity_df = pd.DataFrame(
-    similarity_matrix,
-    index=user_video_matrix.index,
-    columns=user_video_matrix.index
-)
+    log("   Computing similarity matrix...")
+    similarity_matrix = cosine_similarity(user_video_matrix.values)
+    similarity_df = pd.DataFrame(
+        similarity_matrix,
+        index=user_video_matrix.index,
+        columns=user_video_matrix.index
+    )
 
-log("   Building graph...")
-G = nx.Graph()
-users = user_video_matrix.index.tolist()
-G.add_nodes_from(users)
+    log("   Building graph...")
+    G = nx.Graph()
+    users = user_video_matrix.index.tolist()
+    G.add_nodes_from(users)
 
-edge_count = 0
-for i, user_i in enumerate(users):
-    if i % 100 == 0:
-        log(f"   Adding edges: {i}/{len(users)} users processed ({edge_count:,} edges so far)")
-    for j, user_j in enumerate(users[i+1:], start=i+1):
-        sim = similarity_df.loc[user_i, user_j]
-        if sim >= SIMILARITY_THRESHOLD:  # Only add edge if similarity is high enough
-            G.add_edge(user_i, user_j, weight=sim)
-            edge_count += 1
+    edge_count = 0
+    for i, user_i in enumerate(users):
+        if i % 100 == 0:
+            log(f"   Adding edges: {i}/{len(users)} users processed ({edge_count:,} edges so far)")
+        for j, user_j in enumerate(users[i+1:], start=i+1):
+            sim = similarity_df.loc[user_i, user_j]
+            if sim >= SIMILARITY_THRESHOLD:  # Only add edge if similarity is high enough
+                G.add_edge(user_i, user_j, weight=sim)
+                edge_count += 1
 
-mean_weight = np.mean([d['weight'] for u, v, d in G.edges(data=True)])
-log(f"   ✓ Network built: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
-log(f"   Mean similarity: {mean_weight:.4f}")
-log(f"   Density: {nx.density(G):.4f}")
-log(f"   Time: {time.time() - start_time:.1f}s")
+    mean_weight = np.mean([d['weight'] for u, v, d in G.edges(data=True)])
+    log(f"   ✓ Network built: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+    log(f"   Mean similarity: {mean_weight:.4f}")
+    log(f"   Density: {nx.density(G):.4f}")
+    log(f"   Time: {time.time() - start_time:.1f}s")
 
-# Compute centrality
-log("\n2. Computing centrality measures...")
-start_time = time.time()
-strength = dict(G.degree(weight='weight'))
-pagerank = nx.pagerank(G, weight='weight')
-log(f"   ✓ Centrality computed")
-log(f"   Time: {time.time() - start_time:.1f}s")
+    # Compute centrality
+    log("\n2. Computing centrality measures...")
+    start_time = time.time()
+    strength = dict(G.degree(weight='weight'))
+    pagerank = nx.pagerank(G, weight='weight')
+    log(f"   ✓ Centrality computed")
+    log(f"   Time: {time.time() - start_time:.1f}s")
 
-# ============================================================================
-# SI MODEL
-# ============================================================================
-log("\n" + "="*70)
-log("3. RUNNING SI MODEL")
-log("="*70)
+    # ============================================================================
+    # SI MODEL
+    # ============================================================================
+    log("\n" + "="*70)
+    log("3. RUNNING SI MODEL")
+    log("="*70)
 
-start_time = time.time()
-log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
-log(f"   Using {NUM_PROCESSES} parallel processes")
+    start_time = time.time()
+    log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
+    log(f"   Using {NUM_PROCESSES} parallel processes")
 
-# Create partial function with fixed parameters
-process_func = partial(process_si_node, G=G, strength=strength, pagerank=pagerank,
-                       beta=BETA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SI)
+    # Create partial function with fixed parameters
+    process_func = partial(process_si_node, G=G, strength=strength, pagerank=pagerank,
+                           beta=BETA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SI)
 
-# Run in parallel
-si_influence = {}
-with Pool(processes=NUM_PROCESSES) as pool:
-    # Use imap for progress tracking
-    results = list(tqdm(
-        pool.imap(process_func, users),
-        total=len(users),
-        desc="SI Progress"
-    ))
+    # Run in parallel
+    si_influence = {}
+    with Pool(processes=NUM_PROCESSES) as pool:
+        # Use imap for progress tracking
+        results = list(tqdm(
+            pool.imap(process_func, users),
+            total=len(users),
+            desc="SI Progress"
+        ))
 
-    # Convert to dictionary
-    for node, result in results:
-        si_influence[node] = result
+        # Convert to dictionary
+        for node, result in results:
+            si_influence[node] = result
 
-    # Log progress
-    elapsed = time.time() - start_time
-    log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
+        # Log progress
+        elapsed = time.time() - start_time
+        log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
 
-si_df = pd.DataFrame.from_dict(si_influence, orient='index')
-si_df.index.name = 'user_id'
-si_df = si_df.sort_values('time_to_50')
+    si_df = pd.DataFrame.from_dict(si_influence, orient='index')
+    si_df.index.name = 'user_id'
+    si_df = si_df.sort_values('time_to_50')
 
-si_df.to_csv(f'{RESULTS_DIR}/big_matrix_si_influence.csv')
-log(f"   ✓ SI results saved: {RESULTS_DIR}/big_matrix_si_influence.csv")
-log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
+    si_df.to_csv(f'{RESULTS_DIR}/big_matrix_si_influence.csv')
+    log(f"   ✓ SI results saved: {RESULTS_DIR}/big_matrix_si_influence.csv")
+    log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
 
-# ============================================================================
-# SIR MODEL
-# ============================================================================
-log("\n" + "="*70)
-log("4. RUNNING SIR MODEL")
-log("="*70)
+    # ============================================================================
+    # SIR MODEL
+    # ============================================================================
+    log("\n" + "="*70)
+    log("4. RUNNING SIR MODEL")
+    log("="*70)
 
-start_time = time.time()
-log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
-log(f"   Using {NUM_PROCESSES} parallel processes")
+    start_time = time.time()
+    log(f"   Running {len(users)} nodes × {NUM_RUNS_PER_NODE} simulations...")
+    log(f"   Using {NUM_PROCESSES} parallel processes")
 
-# Create partial function with fixed parameters
-process_func = partial(process_sir_node, G=G, strength=strength, pagerank=pagerank,
-                       beta=BETA, gamma=GAMMA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SIR)
+    # Create partial function with fixed parameters
+    process_func = partial(process_sir_node, G=G, strength=strength, pagerank=pagerank,
+                           beta=BETA, gamma=GAMMA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SIR)
 
-# Run in parallel
-sir_influence = {}
-with Pool(processes=NUM_PROCESSES) as pool:
-    # Use imap for progress tracking
-    results = list(tqdm(
-        pool.imap(process_func, users),
-        total=len(users),
-        desc="SIR Progress"
-    ))
+    # Run in parallel
+    sir_influence = {}
+    with Pool(processes=NUM_PROCESSES) as pool:
+        # Use imap for progress tracking
+        results = list(tqdm(
+            pool.imap(process_func, users),
+            total=len(users),
+            desc="SIR Progress"
+        ))
 
-    # Convert to dictionary
-    for node, result in results:
-        sir_influence[node] = result
+        # Convert to dictionary
+        for node, result in results:
+            sir_influence[node] = result
 
-    # Log progress
-    elapsed = time.time() - start_time
-    log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
+        # Log progress
+        elapsed = time.time() - start_time
+        log(f"   ✓ Completed {len(users)} nodes in {elapsed/60:.1f} minutes")
 
-sir_df = pd.DataFrame.from_dict(sir_influence, orient='index')
-sir_df.index.name = 'user_id'
-sir_df = sir_df.sort_values('final_outbreak', ascending=False)
+    sir_df = pd.DataFrame.from_dict(sir_influence, orient='index')
+    sir_df.index.name = 'user_id'
+    sir_df = sir_df.sort_values('final_outbreak', ascending=False)
 
-sir_df.to_csv(f'{RESULTS_DIR}/big_matrix_sir_influence.csv')
-log(f"   ✓ SIR results saved: {RESULTS_DIR}/big_matrix_sir_influence.csv")
-log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
+    sir_df.to_csv(f'{RESULTS_DIR}/big_matrix_sir_influence.csv')
+    log(f"   ✓ SIR results saved: {RESULTS_DIR}/big_matrix_sir_influence.csv")
+    log(f"   Total time: {(time.time() - start_time)/60:.1f} minutes")
 
-# ============================================================================
-# ANALYSIS AND SUMMARY
-# ============================================================================
-log("\n" + "="*70)
-log("5. GENERATING SUMMARY AND PLOTS")
-log("="*70)
+    # ============================================================================
+    # ANALYSIS AND SUMMARY
+    # ============================================================================
+    log("\n" + "="*70)
+    log("5. GENERATING SUMMARY AND PLOTS")
+    log("="*70)
 
-# Correlations
-si_corr_strength = si_df['time_to_50'].corr(si_df['strength'])
-si_corr_pagerank = si_df['time_to_50'].corr(si_df['pagerank'])
-sir_corr_strength = sir_df['final_outbreak'].corr(sir_df['strength'])
-sir_corr_pagerank = sir_df['final_outbreak'].corr(sir_df['pagerank'])
+    # Correlations
+    si_corr_strength = si_df['time_to_50'].corr(si_df['strength'])
+    si_corr_pagerank = si_df['time_to_50'].corr(si_df['pagerank'])
+    sir_corr_strength = sir_df['final_outbreak'].corr(sir_df['strength'])
+    sir_corr_pagerank = sir_df['final_outbreak'].corr(sir_df['pagerank'])
 
-# Summary text
-summary_text = f"""
-================================================================================
-OVERNIGHT SIMULATION RESULTS - BIG MATRIX
-================================================================================
-Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    # Summary text
+    summary_text = f"""
+    ================================================================================
+    OVERNIGHT SIMULATION RESULTS - BIG MATRIX
+    ================================================================================
+    Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-NETWORK PROPERTIES:
-  Nodes:              {G.number_of_nodes():,}
-  Edges:              {G.number_of_edges():,}
-  Density:            {nx.density(G):.4f}
-  Mean similarity:    {mean_weight:.4f}
+    NETWORK PROPERTIES:
+      Nodes:              {G.number_of_nodes():,}
+      Edges:              {G.number_of_edges():,}
+      Density:            {nx.density(G):.4f}
+      Mean similarity:    {mean_weight:.4f}
 
-PARAMETERS:
-  Beta (β):           {BETA}
-  Gamma (γ):          {GAMMA}
-  Similarity thresh:  {SIMILARITY_THRESHOLD}
-  Runs per node:      {NUM_RUNS_PER_NODE}
+    PARAMETERS:
+      Beta (β):           {BETA}
+      Gamma (γ):          {GAMMA}
+      Similarity thresh:  {SIMILARITY_THRESHOLD}
+      Runs per node:      {NUM_RUNS_PER_NODE}
 
-SI MODEL RESULTS:
-  Metric:             Time to 50% infection
-  Fastest spreader:   User {si_df.index[0]} (t50={si_df.iloc[0]['time_to_50']:.2f})
-  Slowest spreader:   User {si_df.index[-1]} (t50={si_df.iloc[-1]['time_to_50']:.2f})
+    SI MODEL RESULTS:
+      Metric:             Time to 50% infection
+      Fastest spreader:   User {si_df.index[0]} (t50={si_df.iloc[0]['time_to_50']:.2f})
+      Slowest spreader:   User {si_df.index[-1]} (t50={si_df.iloc[-1]['time_to_50']:.2f})
 
-  Correlations:
-    Strength:         {si_corr_strength:.4f} (negative = faster spreading)
-    PageRank:         {si_corr_pagerank:.4f}
+      Correlations:
+        Strength:         {si_corr_strength:.4f} (negative = faster spreading)
+        PageRank:         {si_corr_pagerank:.4f}
 
-  Top 10 fastest spreaders:
-{si_df.head(10)[['time_to_50', 'strength', 'pagerank']].to_string()}
+      Top 10 fastest spreaders:
+    {si_df.head(10)[['time_to_50', 'strength', 'pagerank']].to_string()}
 
-SIR MODEL RESULTS:
-  Metric:             Final outbreak size
-  Largest outbreak:   User {sir_df.index[0]} (size={sir_df.iloc[0]['final_outbreak']:.1f}, rate={sir_df.iloc[0]['attack_rate']*100:.1f}%)
-  Smallest outbreak:  User {sir_df.index[-1]} (size={sir_df.iloc[-1]['final_outbreak']:.1f}, rate={sir_df.iloc[-1]['attack_rate']*100:.1f}%)
-  Mean attack rate:   {sir_df['attack_rate'].mean()*100:.2f}%
+    SIR MODEL RESULTS:
+      Metric:             Final outbreak size
+      Largest outbreak:   User {sir_df.index[0]} (size={sir_df.iloc[0]['final_outbreak']:.1f}, rate={sir_df.iloc[0]['attack_rate']*100:.1f}%)
+      Smallest outbreak:  User {sir_df.index[-1]} (size={sir_df.iloc[-1]['final_outbreak']:.1f}, rate={sir_df.iloc[-1]['attack_rate']*100:.1f}%)
+      Mean attack rate:   {sir_df['attack_rate'].mean()*100:.2f}%
 
-  Correlations:
-    Strength:         {sir_corr_strength:.4f}
-    PageRank:         {sir_corr_pagerank:.4f}
+      Correlations:
+        Strength:         {sir_corr_strength:.4f}
+        PageRank:         {sir_corr_pagerank:.4f}
 
-  Top 10 largest outbreaks:
-{sir_df.head(10)[['final_outbreak', 'attack_rate', 'strength', 'pagerank']].to_string()}
+      Top 10 largest outbreaks:
+    {sir_df.head(10)[['final_outbreak', 'attack_rate', 'strength', 'pagerank']].to_string()}
 
-FILES SAVED:
-  - results/big_matrix_si_influence.csv
-  - results/big_matrix_sir_influence.csv
-  - results/big_matrix_summary.txt
-  - results/big_matrix_plots.png
-  - results/big_matrix_log.txt
+    FILES SAVED:
+      - results/big_matrix_si_influence.csv
+      - results/big_matrix_sir_influence.csv
+      - results/big_matrix_summary.txt
+      - results/big_matrix_plots.png
+      - results/big_matrix_log.txt
 
-================================================================================
-"""
+    ================================================================================
+    """
 
-with open(f'{RESULTS_DIR}/big_matrix_summary.txt', 'w') as f:
-    f.write(summary_text)
+    with open(f'{RESULTS_DIR}/big_matrix_summary.txt', 'w') as f:
+        f.write(summary_text)
 
-log("\n" + summary_text)
+    log("\n" + summary_text)
 
-# Generate plots
-log("\n   Generating plots...")
-fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    # Generate plots
+    log("\n   Generating plots...")
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
 
-# SI: Time to 50% vs Strength
-axes[0, 0].scatter(si_df['strength'], si_df['time_to_50'], alpha=0.4, s=20)
-axes[0, 0].set_xlabel('Strength')
-axes[0, 0].set_ylabel('Time to 50% Infection')
-axes[0, 0].set_title(f'SI: Spreading Speed vs Strength (r={si_corr_strength:.3f})')
-axes[0, 0].grid(alpha=0.3)
+    # SI: Time to 50% vs Strength
+    axes[0, 0].scatter(si_df['strength'], si_df['time_to_50'], alpha=0.4, s=20)
+    axes[0, 0].set_xlabel('Strength')
+    axes[0, 0].set_ylabel('Time to 50% Infection')
+    axes[0, 0].set_title(f'SI: Spreading Speed vs Strength (r={si_corr_strength:.3f})')
+    axes[0, 0].grid(alpha=0.3)
 
-# SI: Distribution of times
-axes[0, 1].hist(si_df['time_to_50'], bins=50, alpha=0.7, edgecolor='black')
-axes[0, 1].set_xlabel('Time to 50% Infection')
-axes[0, 1].set_ylabel('Frequency')
-axes[0, 1].set_title(f'SI: Distribution of Spreading Times')
-axes[0, 1].grid(alpha=0.3)
+    # SI: Distribution of times
+    axes[0, 1].hist(si_df['time_to_50'], bins=50, alpha=0.7, edgecolor='black')
+    axes[0, 1].set_xlabel('Time to 50% Infection')
+    axes[0, 1].set_ylabel('Frequency')
+    axes[0, 1].set_title(f'SI: Distribution of Spreading Times')
+    axes[0, 1].grid(alpha=0.3)
 
-# SIR: Outbreak size vs Strength
-axes[1, 0].scatter(sir_df['strength'], sir_df['final_outbreak'], alpha=0.4, s=20)
-axes[1, 0].set_xlabel('Strength')
-axes[1, 0].set_ylabel('Final Outbreak Size')
-axes[1, 0].set_title(f'SIR: Outbreak Size vs Strength (r={sir_corr_strength:.3f})')
-axes[1, 0].grid(alpha=0.3)
+    # SIR: Outbreak size vs Strength
+    axes[1, 0].scatter(sir_df['strength'], sir_df['final_outbreak'], alpha=0.4, s=20)
+    axes[1, 0].set_xlabel('Strength')
+    axes[1, 0].set_ylabel('Final Outbreak Size')
+    axes[1, 0].set_title(f'SIR: Outbreak Size vs Strength (r={sir_corr_strength:.3f})')
+    axes[1, 0].grid(alpha=0.3)
 
-# SIR: Distribution of attack rates
-axes[1, 1].hist(sir_df['attack_rate'] * 100, bins=50, alpha=0.7, edgecolor='black')
-axes[1, 1].set_xlabel('Attack Rate (%)')
-axes[1, 1].set_ylabel('Frequency')
-axes[1, 1].set_title(f'SIR: Distribution of Attack Rates (mean={sir_df["attack_rate"].mean()*100:.1f}%)')
-axes[1, 1].grid(alpha=0.3)
+    # SIR: Distribution of attack rates
+    axes[1, 1].hist(sir_df['attack_rate'] * 100, bins=50, alpha=0.7, edgecolor='black')
+    axes[1, 1].set_xlabel('Attack Rate (%)')
+    axes[1, 1].set_ylabel('Frequency')
+    axes[1, 1].set_title(f'SIR: Distribution of Attack Rates (mean={sir_df["attack_rate"].mean()*100:.1f}%)')
+    axes[1, 1].grid(alpha=0.3)
 
-plt.tight_layout()
-plt.savefig(f'{RESULTS_DIR}/big_matrix_plots.png', dpi=150, bbox_inches='tight')
-log(f"   ✓ Plots saved: {RESULTS_DIR}/big_matrix_plots.png")
+    plt.tight_layout()
+    plt.savefig(f'{RESULTS_DIR}/big_matrix_plots.png', dpi=150, bbox_inches='tight')
+    log(f"   ✓ Plots saved: {RESULTS_DIR}/big_matrix_plots.png")
 
-# ============================================================================
-# COMPLETION
-# ============================================================================
-log("\n" + "="*70)
-log("✓✓✓ ALL SIMULATIONS COMPLETED SUCCESSFULLY ✓✓✓")
-log("="*70)
-log(f"End time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-log("\nCheck results in results/ folder:")
-log("  - big_matrix_si_influence.csv")
-log("  - big_matrix_sir_influence.csv")
-log("  - big_matrix_summary.txt")
-log("  - big_matrix_plots.png")
-log("="*70)
+    # ============================================================================
+    # COMPLETION
+    # ============================================================================
+    log("\n" + "="*70)
+    log("✓✓✓ ALL SIMULATIONS COMPLETED SUCCESSFULLY ✓✓✓")
+    log("="*70)
+    log(f"End time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    log("\nCheck results in results/ folder:")
+    log("  - big_matrix_si_influence.csv")
+    log("  - big_matrix_sir_influence.csv")
+    log("  - big_matrix_summary.txt")
+    log("  - big_matrix_plots.png")
+    log("="*70)
 
-log_file.close()
+    log_file.close()
