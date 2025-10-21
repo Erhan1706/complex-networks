@@ -41,7 +41,7 @@ NUM_PROCESSES = max(1, cpu_count() - 1)  # Use all cores except one
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # Logging
-log_file = open(f'{RESULTS_DIR}/big_matrix_log.txt', 'w')
+log_file = open(f'{RESULTS_DIR}/big_matrix_log.txt', 'w', encoding='utf-8')
 def log(msg):
     timestamp = datetime.now().strftime('%H:%M:%S')
     full_msg = f"[{timestamp}] {msg}"
