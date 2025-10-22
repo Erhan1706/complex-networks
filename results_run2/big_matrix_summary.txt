@@ -1,0 +1,61 @@
+
+    ================================================================================
+                          SIMILARITY NETWORK INFLUENCE ANALYSIS
+                                   (Post-Run Analysis)
+    ================================================================================
+
+    ANALYSIS DIRECTORY: results_run2
+    ANALYSIS TIME: 2025-10-22 16:22:17
+
+    ================================================================================
+    SI MODEL RESULTS (Spreading Speed - Time to 50% Infection)
+    ================================================================================
+
+    Correlations with Time to 50% (negative = faster spread):
+      • Strength:       0.0959
+      • PageRank:       0.3855
+
+    Distribution Statistics:
+      • Mean time to 50%:     2.87 steps
+      • Std time to 50%:      1.43 steps
+      • Median time to 50%:   3.00 steps
+      • Min time to 50%:      1.00 steps
+      • Max time to 50%:      7.20 steps
+
+    ================================================================================
+    SIR MODEL RESULTS (Epidemic Size - Final Outbreak)
+    ================================================================================
+
+    Correlations with Final Outbreak Size:
+      • Strength:       0.5158
+      • PageRank:       0.5418
+
+    Correlations with R0:
+      • Strength:       0.9856
+      • PageRank:       0.8026
+
+    Outbreak Statistics:
+      • Mean final outbreak:  3452.10 nodes
+      • Mean attack rate:     48.11%
+      • Mean epidemic prob:   63.84%
+      • Mean R0:              69.123
+      • Mean peak infection:  2133.27 nodes
+      • Mean time to peak:    2.57 steps
+      • Mean duration:        43.72 steps
+
+    ================================================================================
+    KEY FINDINGS
+    ================================================================================
+
+    Most influential metric for SI spreading speed:
+      → PageRank (r = 0.3855)
+
+    Most influential metric for SIR outbreak size:
+      → PageRank (r = 0.5418)
+
+    FILES SAVED:
+      - results_run2/big_matrix_summary.txt
+      - results_run2/big_matrix_plots.png
+
+    ================================================================================
+    
