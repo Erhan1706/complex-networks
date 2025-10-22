@@ -11,13 +11,20 @@ class BiNetwork:
         interaction_df['timestamp'] = (interaction_df['timestamp'] / 100).round(0)
         interaction_df['timestamp'] = interaction_df['timestamp'] - interaction_df['timestamp'].min()
         self.all_connections = self.interaction_df.pivot_table(index=['user_id', 'video_id'], values=['watch_ratio', 'timestamp'])
+        # create full network of all possible user-video connections
+        users = interaction_df['user_id'].unique()
+        videos = interaction_df['video_id'].unique()
+        full_network = pd.MultiIndex.from_product([users, videos], names=['user_id', 'video_id']).to_frame(index=False)
+        full_network = full_network.merge(self.interaction_df[['user_id', 'video_id', 'timestamp', 'watch_ratio']],
+                                          on=['user_id', 'video_id'], how='left')
+        self.all_connections = full_network
         # set a compound network to the same shape as all but empty
 
     def connections_at_t(self, t):
         return self.all_connections[self.all_connections['timestamp'] == t]
 
     def compound_at_t(self, t):
-        return self.all_connections[self.all_connections['timestamp'] <= t]
+        return self.all_connections[self.all_connections['timestamp'] < t]
 
     def possible_at_t(self, t):
         # all connections that can happen and did not happen yet
@@ -25,8 +32,9 @@ class BiNetwork:
 
     def video_user_features_t(self, t):
         compound_at_t = self.compound_at_t(t)
-        merged = compound_at_t.reset_index().merge(self.user_features, on='user_id', how='left')
-        video_features = merged.groupby('video_id').mean()
+        merged = compound_at_t.reset_index(drop=True).merge(self.user_features, on='user_id', how='left')
+        merged = merged.drop(columns=['user_id', 'timestamp', 'watch_ratio'])
+        video_features = merged.groupby('video_id').mean().reset_index(drop=False)
 
         return video_features
 
@@ -38,7 +46,8 @@ if __name__ == "__main__":
     print(features[features['user_id'] == 2783])
     network = BiNetwork(df, features)
     print(network.all_connections)
+    print(network.all_connections[network.all_connections['timestamp'].isna()])
     print(network.connections_at_t(0))
-    print(network.compound_at_t(0))
-    print(network.video_user_features_t(0))
+    print(network.compound_at_t(10))
+    print(network.video_user_features_t(10))
 
