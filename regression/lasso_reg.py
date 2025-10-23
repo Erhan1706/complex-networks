@@ -38,12 +38,16 @@ class LassoReg:
 
         # todo maybe standardizing here is not good
         # standardize user features
+        # change user_id as index back and forth to not normalize on it
+        self.user_features = self.user_features.set_index('user_id', drop=True)
+        self.user_features = self.user_features[user_feature_columns]
         self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
             user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
+        self.user_features = self.user_features.reset_index(names='user_id')
 
         # 0 is the pop mean for standardized features
         videos = possible['video_id'].unique()
-        self.video_features = pd.DataFrame(0, index=videos, columns=user_feature_columns)
+        self.video_features = pd.DataFrame(0.0, index=videos, columns=user_feature_columns)
         self.connections_df = possible
 
     def step(self):
@@ -66,6 +70,9 @@ class LassoReg:
 
         self.t += 1
 
+        # set possible concetions
+        self.connections_df = self.bi_network.possible_at_t(self.t)
+
 
 if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
@@ -74,4 +81,5 @@ if __name__ == "__main__":
     features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
 
     lasso_reg = LassoReg(small_matrix, big_matrix, features)
+    a=1
     print('finished')
