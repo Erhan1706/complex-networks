@@ -10,28 +10,61 @@ from sklearn.linear_model import Lasso
 
 class LassoReg:
 
-    def __init__(self, small_matrix, big_matrix, user_features):
+    def __init__(self, small_matrix, big_matrix, user_features, ro=0.95):
+        """
+        For each time step we need a df of:
+        - all possible user-video connections at t
+        - feature transformed from a user features and video features pair
+        I dont think preparing it for an arbitrary t, as I did in binetwok, is feasible
+        therefore, start, step
+        """
         self.bi_network = BiNetwork(big_matrix, user_features)
         self.sim_network = SimNetwork(small_matrix)
         self.user_features = user_features
-        self.create_features(t=100)
+        self.ro = ro
         self.reg_model = Lasso(alpha=0.1)
 
-    def create_features(self, t):
-        possible = self.bi_network.possible_at_t(t)
-        print(possible.head())
-        video_features = self.bi_network.video_user_features_t(t)
-        all_options = possible.merge(video_features, on='video_id', how='left', suffixes=('', '_video'))
-        all_options = all_options.merge(self.user_features, on='user_id', how='left', suffixes=('', '_user'))
-        print(all_options.head())
-        vide_feature_columns = [col for col in all_options.columns if col[-5:] != '_user' and col[:6] == 'onehot']
-        new_feature_columns = [col+'_new' for col in vide_feature_columns]
-        user_feature_columns = [col for col in all_options.columns if col[-5:] == '_user' and col[:6] == 'onehot']
-        print(new_feature_columns)
-        print(vide_feature_columns)
-        print(user_feature_columns)
-        print(len(vide_feature_columns), len(user_feature_columns))
-        all_options[new_feature_columns] = all_options[vide_feature_columns].values
+        self.connections_df = None
+        self.video_features = None
+
+        self.t = 0
+
+        self.start_features()
+
+    def start_features(self):
+        # get all possible connections at t=0, full mesh
+        possible = self.bi_network.all_connections
+        user_feature_columns = [col for col in self.user_features.columns if col[:6] == 'onehot']
+
+        # todo maybe standardizing here is not good
+        # standardize user features
+        self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
+            user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
+
+        # 0 is the pop mean for standardized features
+        videos = possible['video_id'].unique()
+        self.video_features = pd.DataFrame(0, index=videos, columns=user_feature_columns)
+        self.connections_df = possible
+
+    def step(self):
+        # update video features based on connections at t
+        # using exponentially weighted moving average with bias correction
+        connections_at_t = self.bi_network.connections_at_t(self.t)
+        if connections_at_t.empty:
+            return
+        # the values to update with is the mean of user features of users who watched the video at t
+        merged = connections_at_t.reset_index(drop=True).merge(self.user_features, on='user_id', how='left')
+
+        #todo maybe weight them by watch ratio in the future?
+        merged = merged.drop(columns=['user_id', 'timestamp', 'watch_ratio'])
+        video_user_features = merged.groupby('video_id').mean()
+
+        # update
+        changing_videos = self.video_features.loc[video_user_features.index]
+        self.video_features.loc[video_user_features.index] = \
+            (changing_videos * self.ro + video_user_features * (1 - self.ro))/(1 - self.ro ** (self.t + 1))
+
+        self.t += 1
 
 
 if __name__ == "__main__":
@@ -41,4 +74,4 @@ if __name__ == "__main__":
     features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
 
     lasso_reg = LassoReg(small_matrix, big_matrix, features)
-    lasso_reg.create_features(t=10)
+    print('finished')

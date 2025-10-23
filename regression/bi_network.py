@@ -28,7 +28,7 @@ class BiNetwork:
 
     def possible_at_t(self, t):
         # all connections that can happen and did not happen yet
-        return self.all_connections[self.all_connections['timestamp'] >= t | self.all_connections['timestamp'].isna()]
+        return self.all_connections[(self.all_connections['timestamp'] >= t) | (self.all_connections['timestamp'].isna())]
 
     def video_user_features_t(self, t):
         compound_at_t = self.compound_at_t(t)
