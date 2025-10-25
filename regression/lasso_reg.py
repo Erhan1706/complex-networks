@@ -105,7 +105,7 @@ class LassoReg:
 
         feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
         print(feature_columns)
-        X_train = train_connections[feature_columns].values
+        X_train = train_connections[feature_columns].fillna(0).values
         y_train = train_connections['watch_ratio'].values
         print(f"Training at t={self.t-1} on {X_train.shape[0]} samples with {X_train.shape[1]} features.")
         print(X_train)
@@ -132,12 +132,13 @@ class LassoReg:
             suffixes=('', '_video')
         )
         feature_columns = [col for col in pred_connections if col[:6] == 'onehot']
-        X_pred = pred_connections[feature_columns].values
-        print(f"Predicting at t={self.t} on {self.possible.shape[0]} samples with {len(feature_columns)} features.")
+        X_pred = pred_connections[feature_columns].fillna(0).values
+
+        print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(feature_columns)} features.")
         print(X_pred)
 
         predictions = self.reg_model.predict(X_pred)
-        true = predictions['watch_ratio'].values
+        true = pred_connections['watch_ratio'].values
 
         return predictions, true
 
