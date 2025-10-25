@@ -42,13 +42,11 @@ class LassoReg:
         possible = self.bi_network.all_connections
         user_feature_columns = [col for col in self.user_features.columns if col[:6] == 'onehot']
 
-        # todo maybe standardizing here is not good
-        # standardize user features
         # change user_id as index back and forth to not normalize on it
         self.user_features = self.user_features.set_index('user_id', drop=True)
         self.user_features = self.user_features[user_feature_columns]
-        self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
-            user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
+        #self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
+        #    user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
         self.user_features = self.user_features.reset_index(names='user_id')
 
         # 0 is the pop mean for standardized features
@@ -67,7 +65,9 @@ class LassoReg:
         # the values to update with is the mean of user features of users who watched the video at t
         merged = connections_at_t.reset_index(drop=True).merge(self.user_features, on='user_id', how='left')
 
-        #todo maybe weight them by watch ratio in the future?
+        #weight by watch ratio
+        cols = [c for c in self.user_features.columns if c != 'user_id']
+        merged[cols] = merged[cols].multiply(merged['watch_ratio'], axis=0)
         merged = merged.drop(columns=['user_id', 'timestamp', 'watch_ratio'])
         video_user_features = merged.groupby('video_id').mean()
 
@@ -100,6 +100,7 @@ class LassoReg:
         )
 
         feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
+        train_connections = train_connections.fillna(0)
         print(feature_columns)
         X_train = train_connections[feature_columns].values
         y_train = train_connections['watch_ratio'].values
@@ -127,13 +128,14 @@ class LassoReg:
             how='left',
             suffixes=('', '_video')
         )
+        pred_connections = pred_connections.fillna(0)
         feature_columns = [col for col in pred_connections if col[:6] == 'onehot']
-        X_pred = self.possible[feature_columns].values
-        print(f"Predicting at t={self.t} on {self.possible.shape[0]} samples with {len(feature_columns)} features.")
+        X_pred = pred_connections[feature_columns].values
+        print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(feature_columns)} features.")
         print(X_pred)
 
         predictions = self.reg_model.predict(X_pred)
-        true = self.possible['watch_ratio'].values
+        true = pred_connections['watch_ratio'].values
 
         return predictions, true
 
@@ -151,14 +153,15 @@ class LassoReg:
     def train(self):
 
         # no predict for t = 0
-        # todo this is messy, it would be nice to clean the empty time steps
         connections = self.bi_network.connections_at_t(self.t)
+        # only iterate over existing timestamps
+        timestamps = sorted(self.possible['timestamp'].unique())
         # todo 10 for testing to make sure it works, change later to max(timestamp)
-        for i in range(10):
+        for t in timestamps[:10]:
             self.step(connections)
             self.train_step(connections)
             # t incrementd in step
-            connections = self.bi_network.connections_at_t(self.t)
+            connections = self.bi_network.connections_at_t(t)
             predictions, true = self.predict(connections)
             if predictions.size == 0:
                 continue
