@@ -60,7 +60,6 @@ class LassoReg:
         # update video features based on connections at t
         # using exponentially weighted moving average with bias correction
         if connections_at_t.empty:
-            self.t += 1
             return
         # the values to update with is the mean of user features of users who watched the video at t
         merged = connections_at_t.reset_index(drop=True).merge(self.user_features, on='user_id', how='left')
@@ -76,7 +75,8 @@ class LassoReg:
         self.video_features.loc[video_user_features.index] = \
             (changing_videos * self.ro + video_user_features * (1 - self.ro))/(1 - self.ro ** (self.t + 1))
 
-        self.t += 1
+        self.timestamp_index += 1
+        self.t = self.timestamps[self.timestamp_index]
         # set possible connections
         self.possible = self.bi_network.possible_at_t(self.t)
 
@@ -101,12 +101,12 @@ class LassoReg:
 
         feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
         train_connections = train_connections.fillna(0)
-        print(feature_columns)
+        #print(feature_columns)
         X_train = train_connections[feature_columns].values
         y_train = train_connections['watch_ratio'].values
         print(f"Training at t={self.t-1} on {X_train.shape[0]} samples with {X_train.shape[1]} features.")
-        print(X_train)
-        print(y_train)
+        #print(X_train)
+        #print(y_train)
         self.reg_model.partial_fit(X_train, y_train)
 
     def predict(self, pred_connections):
@@ -132,7 +132,7 @@ class LassoReg:
         feature_columns = [col for col in pred_connections if col[:6] == 'onehot']
         X_pred = pred_connections[feature_columns].values
         print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(feature_columns)} features.")
-        print(X_pred)
+        #print(X_pred)
 
         predictions = self.reg_model.predict(X_pred)
         true = pred_connections['watch_ratio'].values
@@ -155,13 +155,16 @@ class LassoReg:
         # no predict for t = 0
         connections = self.bi_network.connections_at_t(self.t)
         # only iterate over existing timestamps
-        timestamps = sorted(self.possible['timestamp'].unique())
+        self.timestamps = sorted(self.possible['timestamp'].unique())
         # todo 10 for testing to make sure it works, change later to max(timestamp)
-        for t in timestamps[:10]:
+        self.timestamp_index = 0
+        for i in range(1, len(self.timestamps)):
             self.step(connections)
             self.train_step(connections)
             # t incrementd in step
-            connections = self.bi_network.connections_at_t(t)
+            self.t = self.timestamps[i]
+            self.timestamp_index = i
+            connections = self.bi_network.connections_at_t(self.t)
             predictions, true = self.predict(connections)
             if predictions.size == 0:
                 continue
