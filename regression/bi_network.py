@@ -10,6 +10,11 @@ class BiNetwork:
         self.interaction_df = interaction_df
         interaction_df['timestamp'] = (interaction_df['timestamp'] / 100).round(0)
         interaction_df['timestamp'] = interaction_df['timestamp'] - interaction_df['timestamp'].min()
+        timestamps = interaction_df['timestamp'].unique()
+        timestamps.sort()
+        series = range(len(timestamps))
+        timestamp_mapping = dict(zip(timestamps, series))
+        interaction_df['timestamp'] = interaction_df['timestamp'].map(timestamp_mapping)
         self.all_connections = self.interaction_df.pivot_table(index=['user_id', 'video_id'], values=['watch_ratio', 'timestamp'])
         # create full network of all possible user-video connections
         users = interaction_df['user_id'].unique()
@@ -47,7 +52,6 @@ if __name__ == "__main__":
     network = BiNetwork(df, features)
     print(network.all_connections)
     print(network.all_connections[network.all_connections['timestamp'].isna()])
-    print(network.connections_at_t(0))
-    print(network.compound_at_t(10))
-    print(network.video_user_features_t(10))
+    for i in range(1000):
+        print(network.connections_at_t(i))
 
