@@ -66,6 +66,8 @@ class TrueLasso(LassoReg):
 
         feature_cols = [c for c in train_connections.columns if c.startswith("onehot")]
 
+        print(f"Training Lasso on {len(train_connections)} connections at time {self.t}")
+
         X_train = train_connections[feature_cols].fillna(0).values
         y_train = train_connections['watch_ratio'].values
 
@@ -94,7 +96,8 @@ if __name__ == "__main__":
     features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
     print('data read in')
 
-    lasso_reg = TrueLasso(small_matrix, big_matrix, features, checkpoint_interval=500)
+    lasso_reg = TrueLasso(small_matrix, big_matrix, features, checkpoint_interval=500,
+                          checkpoint_path='true_lasso/true_lasso2_checkpoint')
     rmses = lasso_reg.train(stop=5000)
     plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
     print('finished')

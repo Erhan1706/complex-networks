@@ -16,9 +16,21 @@ def graph_timestamp_frequencies(network):
     return a
 
 
-def video_saturation(network):
+def video_saturation(network, n_times=10):
     # plot number of videos that has not been seen 10 times yet over time
     time_steps = network.all_connections['timestamp'].max() + 1
+    video_n = len(network.all_connections['video_id'].unique())
+    # keep only the first 10 connections per video
+    connections = network.all_connections.copy()
+    connections = connections.dropna()
+    connections = connections.sort_values('timestamp')
+    connections['connection_count'] = connections.groupby('video_id').cumcount() + 1
+    min_con = connections[connections['connection_count'] == n_times]
+    cum = min_con.groupby('timestamp').size().cumsum()
+    line = plt.plot(cum.index, cum.values)[0]
+    line.figure.show()
+    return line
+
 
 if __name__ == "__main__":
     pd.set_option('display.max_columns',  None)
@@ -29,5 +41,7 @@ if __name__ == "__main__":
         df = pd.read_csv(os.path.join('data', 'raw', 'big_matrix.csv'))
         features = pd.read_csv(os.path.join('data', 'raw', 'user_features.csv'))
     network = BiNetwork(df, features)
-    ax = graph_timestamp_frequencies(network)
-    ax.fig.show()
+    # ax = graph_timestamp_frequencies(network)
+    # ax.fig.show()
+
+    line = video_saturation(network, n_times=100)
