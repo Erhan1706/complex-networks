@@ -1,6 +1,7 @@
 import os
 import signal
 import sys
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,8 @@ from graphing import *
 
 class LassoReg:
 
-    def __init__(self, small_matrix, big_matrix, user_features, ro=0.95):
+    def __init__(self, small_matrix, big_matrix, user_features, ro=0.95, checkpoint_interval=100,
+                 checkpoint_path='lasso_reg_checkpoint'):
         """
         For each time step we need a df of:
         - all possible user-video connections at t
@@ -26,6 +28,8 @@ class LassoReg:
         # self.sim_network = SimNetwork(small_matrix)
         print('SimNetwork created.')
         self.user_features = user_features
+        self.checkpoint_interval = checkpoint_interval
+        self.checkpoint_path = checkpoint_path
         self.ro = ro
         self.reg_model = SGDRegressor(
             penalty='l1',
@@ -39,6 +43,7 @@ class LassoReg:
         self.video_features = None
 
         self.t = 0
+        self.rmses = []
 
         self.start_features()
 
@@ -53,8 +58,10 @@ class LassoReg:
         # change user_id as index back and forth to not normalize on it
         self.user_features = self.user_features.set_index('user_id', drop=True)
         self.user_features = self.user_features[user_feature_columns]
+
         self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
             user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
+
         self.user_features = self.user_features.reset_index(names='user_id')
 
         # 0 is the pop mean for standardized features
@@ -168,25 +175,36 @@ class LassoReg:
 
         return rmse
 
-    def train(self):
+    def checkpoint(self):
+        with open(f'{self.checkpoint_path}_t{self.t}.pkl', 'wb') as f:
+            pickle.dump(self, f)
+
+    def train(self, start=1000, stop=7000):
 
         # no predict for t = 0
+        self.t = start
         connections = self.bi_network.connections_at_t(self.t)
+        if connections.size != 0:
+            self.step(connections)
+            self.train_step(connections)
+        else:
+            self.t += 1
+
         self.rmses = []
-        for i in range(2000, int(self.bi_network.all_connections['timestamp'].max() + 1)): 
-            print(i)
-            print(connections)
+        while self.t < stop:
+            print(f"Time step {self.t}")
+            connections = self.bi_network.connections_at_t(self.t)
+            predictions, true = self.predict(connections)
+            self.rmses.append(self.eval(predictions, true))
             if connections.size != 0:
                 self.step(connections)
                 self.train_step(connections)
             else:
                 self.t += 1
-            # t incrementd in step
-            connections = self.bi_network.connections_at_t(self.t)
-            predictions, true = self.predict(connections)
-            if predictions.size == 0:
-                continue
-            self.rmses.append(self.eval(predictions, true))
+
+            if self.t % self.checkpoint_interval == 0:
+                self.checkpoint()
+
         return self.rmses
 
 
@@ -213,8 +231,8 @@ if __name__ == "__main__":
         features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
         print('data read in')
 
-        lasso_reg = LassoReg(small_matrix, big_matrix, features)
-        rmses = lasso_reg.train()
+        lasso_reg = LassoReg(small_matrix, big_matrix, features, checkpoint_interval=10)
+        rmses = lasso_reg.train(stop=1100)
         plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
         print('finished')
     except Exception as e:
