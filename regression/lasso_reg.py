@@ -206,6 +206,9 @@ class LassoReg:
             if self.t % self.checkpoint_interval == 0:
                 self.checkpoint()
 
+        print('Training complete., final checkpointing...')
+        self.checkpoint()
+
         return self.rmses
 
 
