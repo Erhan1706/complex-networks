@@ -12,6 +12,7 @@ def plot_rmse(rmse_series, series_labels, title='RMSE over Time', xlabel='Time S
     plt.ylabel(ylabel)
     plt.xticks(range(len(rmse_series[0])))
     plt.show()
+    plt.savefig('rmse_plot.png')
 
 
 if __name__ == "__main__":

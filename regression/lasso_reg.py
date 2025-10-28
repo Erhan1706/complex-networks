@@ -1,4 +1,6 @@
 import os
+import signal
+import sys
 
 import numpy as np
 import pandas as pd
@@ -28,7 +30,7 @@ class LassoReg:
         self.reg_model = SGDRegressor(
             penalty='l1',
             alpha=0.001,
-            max_iter=1000,
+            max_iter=100,
             tol=1e-3,
             warm_start=True
         )
@@ -58,6 +60,14 @@ class LassoReg:
         # 0 is the pop mean for standardized features
         videos = possible['video_id'].unique()
         self.video_features = pd.DataFrame(0.0, index=videos, columns=user_feature_columns)
+        # initialize all videos with population mean (not 0)
+        """
+        self.population_video_features = self.user_features.drop('user_id', axis=1).mean() 
+        self.video_features = pd.DataFrame(
+            [self.population_video_features.values] * len(videos),
+            index=videos,
+            columns=user_feature_columns
+        ) """
         self.possible = possible
 
         print('Initialized LassoReg model.')
@@ -67,21 +77,26 @@ class LassoReg:
         # using exponentially weighted moving average with bias correction
         if connections_at_t.empty:
             self.t += 1
+            # still update "possible" connections after time moves forward
+            self.possible = self.bi_network.possible_at_t(self.t)
             return
-        # the values to update with is the mean of user features of users who watched the video at t
-        merged = connections_at_t.reset_index(drop=True).merge(self.user_features, on='user_id', how='left')
+
+        # user features 
+        merged = connections_at_t.reset_index(drop=True).merge(
+            self.user_features, on='user_id', how='left'
+        )
 
         #todo maybe weight them by watch ratio in the future?
-        merged = merged.drop(columns=['user_id', 'timestamp', 'watch_ratio'])
-        video_user_features = merged.groupby('video_id').mean()
+        feature_cols = [c for c in merged.columns if c.startswith("onehot")]
+        video_user_features = merged.groupby("video_id")[feature_cols].mean()
 
-        # update
-        changing_videos = self.video_features.loc[video_user_features.index]
-        self.video_features.loc[video_user_features.index] = \
-            (changing_videos * self.ro + video_user_features * (1 - self.ro))/(1 - self.ro ** (self.t + 1))
+        # update with no global denominator
+        for vid, new_vec in video_user_features.iterrows():
+            old_vec = self.video_features.loc[vid]
+            updated_vec = self.ro * old_vec + (1 - self.ro) * new_vec
+            self.video_features.loc[vid] = updated_vec
 
         self.t += 1
-        # set possible connections
         self.possible = self.bi_network.possible_at_t(self.t)
 
     def train_step(self, train_connections):
@@ -104,7 +119,7 @@ class LassoReg:
         )
 
         feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
-        print(feature_columns)
+        #print(feature_columns)
         X_train = train_connections[feature_columns].fillna(0).values
         y_train = train_connections['watch_ratio'].values
         print(f"Training at t={self.t-1} on {X_train.shape[0]} samples with {X_train.shape[1]} features.")
@@ -131,9 +146,9 @@ class LassoReg:
             how='left',
             suffixes=('', '_video')
         )
+
         feature_columns = [col for col in pred_connections if col[:6] == 'onehot']
         X_pred = pred_connections[feature_columns].fillna(0).values
-
         print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(feature_columns)} features.")
         print(X_pred)
 
@@ -156,10 +171,9 @@ class LassoReg:
     def train(self):
 
         # no predict for t = 0
-        # todo this is messy, it would be nice to clean the empty time steps
         connections = self.bi_network.connections_at_t(self.t)
-        rmses = []
-        for i in range(1000):
+        self.rmses = []
+        for i in range(2000, int(self.bi_network.all_connections['timestamp'].max() + 1)): 
             print(i)
             print(connections)
             if connections.size != 0:
@@ -172,20 +186,39 @@ class LassoReg:
             predictions, true = self.predict(connections)
             if predictions.size == 0:
                 continue
-            rmses.append(self.eval(predictions, true))
-        return rmses
+            self.rmses.append(self.eval(predictions, true))
+        return self.rmses
 
 
 if __name__ == "__main__":
-    pd.set_option('display.max_columns', None)
-    small_matrix = pd.read_csv(os.path.join('..', 'data', 'raw', 'small_matrix.csv'))
-    print('small matrix read in')
-    big_matrix = pd.read_csv(os.path.join('..', 'data', 'raw', 'big_matrix.csv'))
-    print('big matrix read in')
-    features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
-    print('data read in')
+    lasso_reg = None
+    
+    # Save plot on interrupt
+    def signal_handler(sig, frame):
+        """Handle Ctrl+C gracefully"""
+        print('\n\nInterrupt received! Saving results...')
+        if lasso_reg is not None:
+            plot_rmse([lasso_reg.rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
+        print('Results saved. Exiting.')
+        sys.exit(0)
+    
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+    try:
+        pd.set_option('display.max_columns', None)
+        small_matrix = pd.read_csv(os.path.join('..', 'data', 'raw', 'small_matrix.csv'))
+        print('small matrix read in')
+        big_matrix = pd.read_csv(os.path.join('..', 'data', 'raw', 'big_matrix.csv'))
+        print('big matrix read in')
+        features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
+        print('data read in')
 
-    lasso_reg = LassoReg(small_matrix, big_matrix, features)
-    rmses = lasso_reg.train()
-    plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
-    print('finished')
+        lasso_reg = LassoReg(small_matrix, big_matrix, features)
+        rmses = lasso_reg.train()
+        plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
+        print('finished')
+    except Exception as e:
+        print(f'An error occurred: {e}')
+        if lasso_reg is not None:
+            plot_rmse([lasso_reg.rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
+        sys.exit(1)
