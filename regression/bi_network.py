@@ -7,7 +7,7 @@ class BiNetwork:
     def __init__(self, interaction_df, user_features):
         # drop all besides one hot encoded features
         self.user_features = user_features.drop(user_features.columns[list(range(1, 13))], axis=1)
-        #self.user_features = user_features.drop(user_features.columns[list([1,2,5,6,8,9,11])], axis=1)
+        # self.user_features = user_features.drop(user_features.columns[list([1,2,5,6,8,9,11])], axis=1)
         self.interaction_df = interaction_df
         interaction_df['timestamp'] = (interaction_df['timestamp'] / 100).round(0)
         interaction_df['timestamp'] = interaction_df['timestamp'] - interaction_df['timestamp'].min()

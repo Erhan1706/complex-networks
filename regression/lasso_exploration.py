@@ -16,6 +16,10 @@ def graph_timestamp_frequencies(network):
     return a
 
 
+def video_saturation(network):
+    # plot number of videos that has not been seen 10 times yet over time
+    time_steps = network.all_connections['timestamp'].max() + 1
+
 if __name__ == "__main__":
     pd.set_option('display.max_columns',  None)
     try:
