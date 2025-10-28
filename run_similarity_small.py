@@ -37,9 +37,10 @@ GAMMA = 0.15  # Changed from 0.1
 NUM_RUNS_PER_NODE = 20  # Runs per node for statistics
 MAX_STEPS_SI = 200
 MAX_STEPS_SIR = 300
-SIMILARITY_THRESHOLD = 0.7  # Only connect users with similarity >= this
+SIMILARITY_THRESHOLD = 0.6  # Only connect users with similarity >= this (0.6 = sweet spot)
 SAMPLE_SIZE = None  # Number of nodes to simulate (set to None for all nodes)
 NUM_PROCESSES = max(1, cpu_count() - 1)  # Use all cores except one
+USE_GIANT_COMPONENT = True  # Only analyze nodes in the giant connected component
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -269,6 +270,22 @@ if __name__ == '__main__':
     log(f"   Density: {nx.density(G):.4f}")
     log(f"   Time: {time.time() - start_time:.1f}s")
 
+    # Extract giant component if requested
+    isolated_nodes = 0  # Initialize for later use
+    if USE_GIANT_COMPONENT:
+        log("\n   Extracting giant component...")
+        components = list(nx.connected_components(G))
+        giant_component = max(components, key=len)
+        isolated_nodes = G.number_of_nodes() - len(giant_component)
+
+        G = G.subgraph(giant_component).copy()
+        users = list(G.nodes())
+
+        total_nodes = G.number_of_nodes() + isolated_nodes
+        log(f"   ✓ Giant component: {G.number_of_nodes():,} nodes ({G.number_of_nodes()/total_nodes*100:.1f}%)")
+        log(f"   Isolated/small components: {isolated_nodes:,} nodes ({isolated_nodes/total_nodes*100:.1f}%)")
+        log(f"   Giant component density: {nx.density(G):.4f}")
+
     # Compute centrality
     log("\n2. Computing centrality measures...")
     start_time = time.time()
@@ -383,6 +400,12 @@ if __name__ == '__main__':
     sir_corr_pagerank = sir_df['final_outbreak'].corr(sir_df['pagerank'])
 
     # Summary text
+    if USE_GIANT_COMPONENT:
+        total_nodes_network = G.number_of_nodes() + isolated_nodes
+        isolated_info = f"\n      Isolated nodes:     {isolated_nodes:,} ({isolated_nodes/total_nodes_network*100:.1f}% excluded)"
+    else:
+        isolated_info = ""
+
     summary_text = f"""
     ================================================================================
     OVERNIGHT SIMULATION RESULTS - SMALL MATRIX
@@ -390,10 +413,10 @@ if __name__ == '__main__':
     Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
     NETWORK PROPERTIES:
-      Nodes:              {G.number_of_nodes():,}
+      Nodes analyzed:     {G.number_of_nodes():,} (giant component)
       Edges:              {G.number_of_edges():,}
       Density:            {nx.density(G):.4f}
-      Mean similarity:    {mean_weight:.4f}
+      Mean similarity:    {mean_weight:.4f}{isolated_info}
 
     PARAMETERS:
       Beta (β):           {BETA}
