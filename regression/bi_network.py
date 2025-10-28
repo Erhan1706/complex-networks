@@ -4,11 +4,15 @@ import os
 
 class BiNetwork:
 
-    def __init__(self, interaction_df, user_features):
+    def __init__(self, interaction_df, user_features, filter_na_users=True):
         # drop all besides one hot encoded features
         self.user_features = user_features.drop(user_features.columns[list(range(1, 13))], axis=1)
         # self.user_features = user_features.drop(user_features.columns[list([1,2,5,6,8,9,11])], axis=1)
         self.interaction_df = interaction_df
+        if filter_na_users:
+            users_with_na = user_features[user_features.isna().any(axis=1)]['user_id']
+            self.user_features = self.user_features[~self.user_features['user_id'].isin(users_with_na)].reset_index(drop=True)
+            self.interaction_df = interaction_df[~interaction_df['user_id'].isin(users_with_na)].reset_index(drop=True)
         interaction_df['timestamp'] = (interaction_df['timestamp'] / 100).round(0)
         interaction_df['timestamp'] = interaction_df['timestamp'] - interaction_df['timestamp'].min()
         timestamps = interaction_df['timestamp'].unique()
