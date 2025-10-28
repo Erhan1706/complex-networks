@@ -51,8 +51,8 @@ class BiNetwork:
 
 if __name__ == "__main__":
     pd.set_option('display.max_columns',  None)
-    df = pd.read_csv(os.path.join('..', 'data', 'raw', 'big_matrix.csv'))
-    features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
+    df = pd.read_csv(os.path.join('.', 'data', 'raw', 'big_matrix.csv'))
+    features = pd.read_csv(os.path.join('.', 'data', 'raw', 'user_features.csv'))
     print(features[features['user_id'] == 2783])
     network = BiNetwork(df, features)
     print(network.all_connections)

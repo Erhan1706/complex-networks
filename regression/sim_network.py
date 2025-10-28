@@ -22,15 +22,28 @@ class SimNetwork:
         )
         self.similarity_df = similarity_df.reset_index().melt(id_vars='user_id', var_name='neighbor_id', value_name='similarity')
         self.similarity_df = self.similarity_df[self.similarity_df['user_id'] != self.similarity_df['neighbor_id']].reset_index(drop=True)
+        # Store similar users in hashmap
+        self.neighbor_dict = {}
+        for user_id in interactions['user_id'].unique():
+            similar_users = self.get_neighbors(user_id, threshold=0.5)
+            self.neighbor_dict[user_id] = similar_users
 
-    def get_neighbors(self, user_ids: pd.Series, threshold=0.5):
-        candidate_users = self.similarity_df[self.similarity_df['user_id'].isin(user_ids)]
-        return candidate_users[candidate_users['similarity'] >= threshold]
+    def get_neighbors(self, user_id: int, threshold=0.5) -> list[int]:
+        """ Get neighbor users from the similarity matrix"""
+        neighbors = self.similarity_df[self.similarity_df['user_id'] == user_id]
+        return neighbors[neighbors['similarity'] >= threshold]["neighbor_id"].tolist()
+
+    def get_neighbors_who_watched(self, watched_by: dict[int, set], user_id: int, video_id: int) -> set[int]:
+        """ Get neighbors of user_id in similarity matrix who watched video_id for the 
+        current compound network for time t."""
+        neighbors = self.neighbor_dict.get(user_id, pd.Series())
+        neighbors_who_watched = watched_by.get(video_id, set()).intersection(neighbors)
+
+        return neighbors_who_watched
 
 
 if __name__ == "__main__":
-    small_matrix = pd.read_csv(os.path.join('..', 'data', 'raw', 'small_matrix.csv'))
+    small_matrix = pd.read_csv(os.path.join('.', 'data', 'raw', 'small_matrix.csv'))
     pd.set_option('display.max_columns',  None)
     network = SimNetwork(small_matrix)
     print(network.similarity_df)
-    print(network.get_neighbors(pd.Series([19, 7141]), threshold=0.1))

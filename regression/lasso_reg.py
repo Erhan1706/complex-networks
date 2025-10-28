@@ -10,7 +10,7 @@ from sklearn.linear_model import SGDRegressor
 from sim_network import SimNetwork
 from bi_network import BiNetwork
 from graphing import *
-
+from collections import defaultdict
 
 class LassoReg:
 
@@ -25,7 +25,7 @@ class LassoReg:
         """
         self.bi_network = BiNetwork(big_matrix, user_features)
         print('BiNetwork created.')
-        # self.sim_network = SimNetwork(small_matrix)
+        self.sim_network = SimNetwork(small_matrix)
         print('SimNetwork created.')
         self.user_features = user_features
         self.checkpoint_interval = checkpoint_interval
@@ -45,6 +45,7 @@ class LassoReg:
         self.t = 0
         self.rmses = []
         self.rmse_timesteps = []
+        self.watched_by = defaultdict(set)
 
         self.start_features()
 
@@ -52,22 +53,22 @@ class LassoReg:
         # get all possible connections at t=0, full mesh
         print('Initializing LassoReg model.')
         possible = self.bi_network.all_connections
-        user_feature_columns = [col for col in self.user_features.columns if col[:6] == 'onehot']
+        self.user_feature_columns = [col for col in self.user_features.columns if col[:6] == 'onehot']
 
         # todo maybe standardizing here is not good
         # standardize user features
         # change user_id as index back and forth to not normalize on it
         self.user_features = self.user_features.set_index('user_id', drop=True)
-        self.user_features = self.user_features[user_feature_columns]
+        self.user_features = self.user_features[self.user_feature_columns]
 
-        self.user_features[user_feature_columns] = (self.user_features[user_feature_columns] - self.user_features[
-            user_feature_columns].mean()) / self.user_features[user_feature_columns].std()
+        self.user_features[self.user_feature_columns] = (self.user_features[self.user_feature_columns] - self.user_features[
+            self.user_feature_columns].mean()) / self.user_features[self.user_feature_columns].std()
 
         self.user_features = self.user_features.reset_index(names='user_id')
 
         # 0 is the pop mean for standardized features
         videos = possible['video_id'].unique()
-        self.video_features = pd.DataFrame(0.0, index=videos, columns=user_feature_columns)
+        self.video_features = pd.DataFrame(0.0, index=videos, columns=self.user_feature_columns)
         # initialize all videos with population mean (not 0)
         """
         self.population_video_features = self.user_features.drop('user_id', axis=1).mean() 
@@ -107,6 +108,28 @@ class LassoReg:
         self.t += 1
         self.possible = self.bi_network.possible_at_t(self.t)
 
+    def add_similarity_feature(self, df, cap=50):
+        similar_counts = []
+        for _, row in df.iterrows():
+            user_id, video_id = row['user_id'], row['video_id']
+            neighbors_watched = self.sim_network.get_neighbors_who_watched(
+                self.watched_by, user_id, video_id
+            )
+            similar_counts.append(len(neighbors_watched))
+
+        # transform and standardize
+        clipped = np.minimum(similar_counts, cap)
+        transformed = np.log1p(clipped) 
+        m = transformed.mean()
+        s = transformed.std()
+        if s < 1e-8:
+            standardized = transformed - m  # if all zero, just zero-mean
+        else:
+            standardized = (transformed - m) / s
+
+        df['similar_users_watched'] = standardized
+        return df
+
     def train_step(self, train_connections):
 
         if train_connections.empty:
@@ -125,10 +148,10 @@ class LassoReg:
             how='left',
             suffixes=('', '_video')
         )
-
-        feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
-        #print(feature_columns)
-        X_train = train_connections[feature_columns].fillna(0).values
+        self.add_similarity_feature(train_connections)
+        self.feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
+        self.feature_columns.append('similar_users_watched')
+        X_train = train_connections[self.feature_columns].fillna(0).values
         y_train = train_connections['watch_ratio'].values
         print(f"Training at t={self.t-1} on {X_train.shape[0]} samples with {X_train.shape[1]} features.")
         print(X_train)
@@ -154,10 +177,9 @@ class LassoReg:
             how='left',
             suffixes=('', '_video')
         )
-
-        feature_columns = [col for col in pred_connections if col[:6] == 'onehot']
-        X_pred = pred_connections[feature_columns].fillna(0).values
-        print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(feature_columns)} features.")
+        self.add_similarity_feature(pred_connections)
+        X_pred = pred_connections[self.feature_columns].fillna(0).values
+        print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(self.feature_columns)} features.")
         print(X_pred)
 
         predictions = self.reg_model.predict(X_pred)
@@ -190,6 +212,13 @@ class LassoReg:
             self.train_step(connections)
         else:
             self.t += 1
+        self.rmses = []
+
+        # Build historical watched_by from data before start
+        compound = self.bi_network.compound_at_t(start)
+        for video_id in compound['video_id'].unique():
+            users_who_watched = compound[compound['video_id'] == video_id]['user_id']
+            self.watched_by[video_id].update(users_who_watched)
 
         while self.t < stop:
             print(f"Time step {self.t}")
@@ -197,6 +226,12 @@ class LassoReg:
             predictions, true = self.predict(connections)
             self.rmses.append(self.eval(predictions, true))
             self.rmse_timesteps.append(self.t)
+
+            for video_id in connections['video_id'].unique():
+                # Keep track of what videos were watched at the current t
+                users_who_watched = connections[connections['video_id'] == video_id]['user_id']
+                self.watched_by[video_id].update(users_who_watched)
+
             if connections.size != 0:
                 self.step(connections)
                 self.train_step(connections)
@@ -235,8 +270,8 @@ if __name__ == "__main__":
         features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
         print('data read in')
 
-        lasso_reg = LassoReg(small_matrix, big_matrix, features, checkpoint_interval=10)
-        rmses = lasso_reg.train(stop=1100)
+        lasso_reg = LassoReg(small_matrix, big_matrix, features, checkpoint_interval=1000)
+        rmses = lasso_reg.train()
         plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
         print('finished')
     except Exception as e:
