@@ -44,14 +44,17 @@ USE_GIANT_COMPONENT = True  # Only analyze nodes in the giant connected componen
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-# Logging
-log_file = open(f'{RESULTS_DIR}/small_matrix_log.txt', 'w', encoding='utf-8')
+# Logging (global for function access)
+log_file = None
+
 def log(msg):
+    """Log message to both console and file"""
     timestamp = datetime.now().strftime('%H:%M:%S')
     full_msg = f"[{timestamp}] {msg}"
     print(full_msg)
-    log_file.write(full_msg + '\n')
-    log_file.flush()
+    if log_file:
+        log_file.write(full_msg + '\n')
+        log_file.flush()
 
 # ============================================================================
 # SIMULATION FUNCTIONS (defined at module level for multiprocessing)
@@ -204,11 +207,17 @@ def process_sir_node(node, G, strength, pagerank, beta, gamma, num_runs, max_ste
 # MAIN EXECUTION
 # ============================================================================
 
-if __name__ == '__main__':
+def run_simulation():
+    """Main simulation function"""
+    global log_file
+
+    # Open log file
+    log_file = open(f'{RESULTS_DIR}/small_matrix_log.txt', 'w', encoding='utf-8')
+
     log("="*70)
     log("OVERNIGHT SI/SIR SIMULATION - SMALL MATRIX")
     log("="*70)
-    log(f"Data file: {DATA_FILE}")
+    log(f"Data file: {os.path.abspath(DATA_FILE)}")
     log(f"Parameters: β={BETA}, γ={GAMMA}, runs={NUM_RUNS_PER_NODE}")
     log(f"Similarity threshold: {SIMILARITY_THRESHOLD}")
     log(f"Parallel processes: {NUM_PROCESSES} (out of {cpu_count()} CPUs)")
@@ -517,6 +526,7 @@ if __name__ == '__main__':
     log("="*70)
 
     log_file.close()
+    return RESULTS_DIR  # Return the results directory path
 
 
 # ============================================================================
@@ -561,20 +571,15 @@ def analyze_existing_results(results_dir='results'):
     # Generate summary statistics
     print(f"\nGenerating summary statistics...")
 
-    # SI correlations
+    # SI correlations (only use columns that exist)
     si_corr_strength = si_df['strength'].corr(si_df['time_to_50'])
-    si_corr_degree = si_df['degree'].corr(si_df['time_to_50'])
-    si_corr_betweenness = si_df['betweenness'].corr(si_df['time_to_50'])
-    si_corr_closeness = si_df['closeness'].corr(si_df['time_to_50'])
+    si_corr_pagerank = si_df['pagerank'].corr(si_df['time_to_50'])
 
     # SIR correlations
     sir_corr_strength = sir_df['strength'].corr(sir_df['final_outbreak'])
-    sir_corr_degree = sir_df['degree'].corr(sir_df['final_outbreak'])
-    sir_corr_betweenness = sir_df['betweenness'].corr(sir_df['final_outbreak'])
-    sir_corr_closeness = sir_df['closeness'].corr(sir_df['final_outbreak'])
-
+    sir_corr_pagerank = sir_df['pagerank'].corr(sir_df['final_outbreak'])
     sir_corr_r0_strength = sir_df['strength'].corr(sir_df['R0'])
-    sir_corr_r0_degree = sir_df['degree'].corr(sir_df['R0'])
+    sir_corr_r0_pagerank = sir_df['pagerank'].corr(sir_df['R0'])
 
     # Build summary text
     summary_text = f"""
@@ -592,9 +597,7 @@ def analyze_existing_results(results_dir='results'):
 
     Correlations with Time to 50% (negative = faster spread):
       • Strength:      {si_corr_strength:7.4f}
-      • Degree:        {si_corr_degree:7.4f}
-      • Betweenness:   {si_corr_betweenness:7.4f}
-      • Closeness:     {si_corr_closeness:7.4f}
+      • PageRank:      {si_corr_pagerank:7.4f}
 
     Distribution Statistics:
       • Mean time to 50%:     {si_df['time_to_50'].mean():.2f} steps
@@ -609,13 +612,11 @@ def analyze_existing_results(results_dir='results'):
 
     Correlations with Final Outbreak Size:
       • Strength:      {sir_corr_strength:7.4f}
-      • Degree:        {sir_corr_degree:7.4f}
-      • Betweenness:   {sir_corr_betweenness:7.4f}
-      • Closeness:     {sir_corr_closeness:7.4f}
+      • PageRank:      {sir_corr_pagerank:7.4f}
 
     Correlations with R0:
       • Strength:      {sir_corr_r0_strength:7.4f}
-      • Degree:        {sir_corr_r0_degree:7.4f}
+      • PageRank:      {sir_corr_r0_pagerank:7.4f}
 
     Outbreak Statistics:
       • Mean final outbreak:  {sir_df['final_outbreak'].mean():.2f} nodes
@@ -631,10 +632,10 @@ def analyze_existing_results(results_dir='results'):
     ================================================================================
 
     Most influential metric for SI spreading speed:
-      → {'Strength' if abs(si_corr_strength) == max(abs(si_corr_strength), abs(si_corr_degree), abs(si_corr_betweenness), abs(si_corr_closeness)) else 'Degree' if abs(si_corr_degree) == max(abs(si_corr_strength), abs(si_corr_degree), abs(si_corr_betweenness), abs(si_corr_closeness)) else 'Betweenness' if abs(si_corr_betweenness) == max(abs(si_corr_strength), abs(si_corr_degree), abs(si_corr_betweenness), abs(si_corr_closeness)) else 'Closeness'} (r = {max(abs(si_corr_strength), abs(si_corr_degree), abs(si_corr_betweenness), abs(si_corr_closeness)):.4f})
+      → {'Strength' if abs(si_corr_strength) >= abs(si_corr_pagerank) else 'PageRank'} (r = {max(abs(si_corr_strength), abs(si_corr_pagerank)):.4f})
 
     Most influential metric for SIR outbreak size:
-      → {'Strength' if abs(sir_corr_strength) == max(abs(sir_corr_strength), abs(sir_corr_degree), abs(sir_corr_betweenness), abs(sir_corr_closeness)) else 'Degree' if abs(sir_corr_degree) == max(abs(sir_corr_strength), abs(sir_corr_degree), abs(sir_corr_betweenness), abs(sir_corr_closeness)) else 'Betweenness' if abs(sir_corr_betweenness) == max(abs(sir_corr_strength), abs(sir_corr_degree), abs(sir_corr_betweenness), abs(sir_corr_closeness)) else 'Closeness'} (r = {max(abs(sir_corr_strength), abs(sir_corr_degree), abs(sir_corr_betweenness), abs(sir_corr_closeness)):.4f})
+      → {'Strength' if abs(sir_corr_strength) >= abs(sir_corr_pagerank) else 'PageRank'} (r = {max(abs(sir_corr_strength), abs(sir_corr_pagerank)):.4f})
 
     FILES SAVED:
       - {results_dir}/small_matrix_summary.txt
@@ -698,13 +699,38 @@ def analyze_existing_results(results_dir='results'):
 if __name__ == "__main__":
     import sys
 
-    # Check for --analyze flag
+    # Check for --analyze flag FIRST
     if len(sys.argv) > 1 and sys.argv[1] == '--analyze':
+        # Post-run analysis mode
         if len(sys.argv) > 2:
-            analyze_existing_results(sys.argv[2])
+            results_dir = sys.argv[2]
+            analyze_existing_results(results_dir)
         else:
-            print("Usage: python run_similarity_small.py --analyze <results_directory>")
-            print("Example: python run_similarity_small.py --analyze results_run2")
+            print("\n" + "="*70)
+            print("POST-RUN ANALYSIS MODE")
+            print("="*70)
+            print("\nUsage: python run_similarity_small.py --analyze <results_directory>")
+            print("\nExamples:")
+            print("  python run_similarity_small.py --analyze results_run3")
+            print("  python run_similarity_small.py --analyze results_run4")
+            print("  python run_similarity_small.py --analyze results/run_20251027_195832")
+            print("\nAvailable results directories:")
+            import os
+            import glob
+
+            # Find all results directories (both results/* and results_run*)
+            result_dirs = []
+            if os.path.exists('results'):
+                result_dirs += [f"results/{d}" for d in os.listdir('results')
+                               if os.path.isdir(os.path.join('results', d))]
+            result_dirs += glob.glob('results_run*')
+
+            if result_dirs:
+                for d in sorted(result_dirs):
+                    print(f"  - {d}")
+            else:
+                print("  (no results directories found)")
+            print("="*70 + "\n")
     else:
-        # Run normal execution (the code above)
-        pass
+        # Normal simulation mode
+        run_simulation()

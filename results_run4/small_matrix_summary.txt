@@ -1,76 +1,61 @@
 
     ================================================================================
-    OVERNIGHT SIMULATION RESULTS - SMALL MATRIX
+                          SIMILARITY NETWORK INFLUENCE ANALYSIS
+                                   (Post-Run Analysis)
     ================================================================================
-    Completed: 2025-10-28 08:54:26
 
-    NETWORK PROPERTIES:
-      Nodes:              1,411
-      Edges:              167,489
-      Density:            0.1684
-      Mean similarity:    0.8594
+    ANALYSIS DIRECTORY: results_run4
+    ANALYSIS TIME: 2025-10-28 10:42:00
 
-    PARAMETERS:
-      Beta (β):           0.05
-      Gamma (γ):          0.15
-      Similarity thresh:  0.8
-      Runs per node:      20
+    ================================================================================
+    SI MODEL RESULTS (Spreading Speed - Time to 50% Infection)
+    ================================================================================
 
-    SI MODEL RESULTS:
-      Metric:             Time to 50% infection
-      Fastest spreader:   User 6899 (t50=1.00)
-      Slowest spreader:   User 1800 (t50=4.10)
+    Correlations with Time to 50% (negative = faster spread):
+      • Strength:       0.8196
+      • PageRank:       0.7879
 
-      Correlations:
-        Strength:         0.8196 (negative = faster spreading)
-        PageRank:         0.7879
+    Distribution Statistics:
+      • Mean time to 50%:     2.39 steps
+      • Std time to 50%:      1.37 steps
+      • Median time to 50%:   2.90 steps
+      • Min time to 50%:      1.00 steps
+      • Max time to 50%:      4.10 steps
 
-      Top 10 fastest spreaders:
-             time_to_50  strength  pagerank
-user_id                                
-6899            1.0       0.0  0.000175
-7132            1.0       0.0  0.000175
-7121            1.0       0.0  0.000175
-7116            1.0       0.0  0.000175
-7110            1.0       0.0  0.000175
-7100            1.0       0.0  0.000175
-7086            1.0       0.0  0.000175
-102             1.0       0.0  0.000175
-73              1.0       0.0  0.000175
-55              1.0       0.0  0.000175
+    ================================================================================
+    SIR MODEL RESULTS (Epidemic Size - Final Outbreak)
+    ================================================================================
 
-    SIR MODEL RESULTS:
-      Metric:             Final outbreak size
-      Largest outbreak:   User 165 (size=728.7, rate=51.6%)
-      Smallest outbreak:  User 14 (size=1.0, rate=0.1%)
-      Mean attack rate:   22.37%
-      Mean R0:            8.49
-      Mean epidemic prob: 43.3%
+    Correlations with Final Outbreak Size:
+      • Strength:       0.8480
+      • PageRank:       0.8195
 
-      Correlations:
-        Strength:         0.8480
-        PageRank:         0.8195
+    Correlations with R0:
+      • Strength:       0.9900
+      • PageRank:       0.9738
 
-      Top 10 largest outbreaks:
-             final_outbreak  attack_rate     R0  epidemic_probability    strength
-user_id                                                                      
-165              728.70     0.516442  27.45                   1.0  524.310803
-1884             728.40     0.516230  28.05                   1.0  579.236038
-1773             728.35     0.516194  22.25                   1.0  437.515706
-1758             728.35     0.516194  18.10                   1.0  336.118761
-5457             728.25     0.516123  30.20                   1.0  606.810870
-5794             728.20     0.516088  12.80                   1.0  233.402775
-6169             728.20     0.516088  29.00                   1.0  561.883820
-4427             728.10     0.516017  23.00                   1.0  461.926476
-4140             728.00     0.515946  10.80                   1.0  208.909899
-3631             727.95     0.515911  18.05                   1.0  356.707378
+    Outbreak Statistics:
+      • Mean final outbreak:  315.62 nodes
+      • Mean attack rate:     22.37%
+      • Mean epidemic prob:   43.31%
+      • Mean R0:              8.488
+      • Mean peak infection:  278.03 nodes
+      • Mean time to peak:    1.38 steps
+      • Mean duration:        24.92 steps
+
+    ================================================================================
+    KEY FINDINGS
+    ================================================================================
+
+    Most influential metric for SI spreading speed:
+      → Strength (r = 0.8196)
+
+    Most influential metric for SIR outbreak size:
+      → Strength (r = 0.8480)
 
     FILES SAVED:
-      - results/run_20251028_083809/small_matrix_si_influence.csv
-      - results/run_20251028_083809/small_matrix_sir_influence.csv
-      - results/run_20251028_083809/small_matrix_summary.txt
-      - results/run_20251028_083809/small_matrix_plots.png
-      - results/run_20251028_083809/small_matrix_log.txt
+      - results_run4/small_matrix_summary.txt
+      - results_run4/small_matrix_plots.png
 
     ================================================================================
     

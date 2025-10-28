@@ -1,0 +1,163 @@
+[09:30:12] ======================================================================
+[09:30:12] OVERNIGHT SI/SIR SIMULATION - SMALL MATRIX
+[09:30:12] ======================================================================
+[09:30:12] Data file: C:\Users\diede\Documents\Complex Networks\complex-networks\data\small_matrix.csv
+[09:30:12] Parameters: β=0.05, γ=0.15, runs=20
+[09:30:12] Similarity threshold: 0.6
+[09:30:12] Parallel processes: 23 (out of 24 CPUs)
+[09:30:12] Start time: 2025-10-28 09:30:12
+[09:30:12] ======================================================================
+[09:30:12] 
+1. Loading data and building network...
+[09:30:15]    Loaded 4,676,570 interactions
+[09:30:15]    Unique users: 1,411
+[09:30:15]    Unique videos: 3,327
+[09:30:15]    Creating user-video matrix...
+[09:30:16]    Matrix shape: 1,411 × 3,327
+[09:30:16]    Computing similarity matrix...
+[09:30:16]    Building graph...
+[09:30:16]    Adding edges: 0/1411 users processed (0 edges so far)
+[09:30:17]    Adding edges: 100/1411 users processed (58,129 edges so far)
+[09:30:17]    Adding edges: 200/1411 users processed (116,053 edges so far)
+[09:30:18]    Adding edges: 300/1411 users processed (168,911 edges so far)
+[09:30:18]    Adding edges: 400/1411 users processed (217,464 edges so far)
+[09:30:19]    Adding edges: 500/1411 users processed (265,213 edges so far)
+[09:30:19]    Adding edges: 600/1411 users processed (306,942 edges so far)
+[09:30:20]    Adding edges: 700/1411 users processed (344,516 edges so far)
+[09:30:20]    Adding edges: 800/1411 users processed (374,574 edges so far)
+[09:30:20]    Adding edges: 900/1411 users processed (398,120 edges so far)
+[09:30:20]    Adding edges: 1000/1411 users processed (420,105 edges so far)
+[09:30:20]    Adding edges: 1100/1411 users processed (438,752 edges so far)
+[09:30:21]    Adding edges: 1200/1411 users processed (450,526 edges so far)
+[09:30:21]    Adding edges: 1300/1411 users processed (457,128 edges so far)
+[09:30:21]    Adding edges: 1400/1411 users processed (459,950 edges so far)
+[09:30:21]    ✓ Network built: 1,411 nodes, 459,989 edges
+[09:30:21]    Mean similarity: 0.7581
+[09:30:21]    Density: 0.4624
+[09:30:21]    Time: 8.6s
+[09:30:21] 
+   Extracting giant component...
+[09:30:22]    ✓ Giant component: 1,157 nodes (82.0%)
+[09:30:22]    Isolated/small components: 254 nodes (18.0%)
+[09:30:22]    Giant component density: 0.6878
+[09:30:22] 
+2. Computing centrality measures...
+[09:30:23]    ✓ Centrality computed
+[09:30:23]    Time: 0.8s
+[09:30:23] 
+   Using all 1157 nodes (no sampling)
+[09:30:23] 
+======================================================================
+[09:30:23] 3. RUNNING SI MODEL
+[09:30:23] ======================================================================
+[09:30:23]    Running 1157 nodes × 20 simulations...
+[09:30:23]    Using 23 parallel processes
+[09:59:04]    ✓ Completed 1157 nodes in 28.7 minutes
+[09:59:14]    ✓ SI results saved: results/run_20251028_093012/small_matrix_si_influence.csv
+[09:59:14]    Total time: 28.9 minutes
+[09:59:14] 
+======================================================================
+[09:59:14] 4. RUNNING SIR MODEL
+[09:59:14] ======================================================================
+[09:59:14]    Running 1157 nodes × 20 simulations...
+[09:59:14]    Using 23 parallel processes
+[10:20:18]    ✓ Completed 1157 nodes in 21.1 minutes
+[10:20:28]    ✓ SIR results saved: results/run_20251028_093012/small_matrix_sir_influence.csv
+[10:20:28]    Total time: 21.2 minutes
+[10:20:28] 
+======================================================================
+[10:20:28] 5. GENERATING SUMMARY AND PLOTS
+[10:20:28] ======================================================================
+[10:20:28] 
+
+    ================================================================================
+    OVERNIGHT SIMULATION RESULTS - SMALL MATRIX
+    ================================================================================
+    Completed: 2025-10-28 10:20:28
+
+    NETWORK PROPERTIES:
+      Nodes analyzed:     1,157 (giant component)
+      Edges:              459,984
+      Density:            0.6878
+      Mean similarity:    0.7581
+      Isolated nodes:     254 (18.0% excluded)
+
+    PARAMETERS:
+      Beta (β):           0.05
+      Gamma (γ):          0.15
+      Similarity thresh:  0.6
+      Runs per node:      20
+
+    SI MODEL RESULTS:
+      Metric:             Time to 50% infection
+      Fastest spreader:   User 6661 (t50=1.00)
+      Slowest spreader:   User 442 (t50=3.00)
+
+      Correlations:
+        Strength:         -0.1143 (negative = faster spreading)
+        PageRank:         -0.1314
+
+      Top 10 fastest spreaders:
+             time_to_50  strength  pagerank
+user_id                                
+6661            1.0  0.606517  0.000130
+5999            1.0  0.657839  0.000330
+6330            1.0  0.600626  0.000131
+6435            1.0  1.221084  0.000131
+5861            1.0  0.674666  0.000131
+5697            1.0  0.646915  0.000131
+5526            1.0  1.223715  0.000132
+323             1.0  0.658737  0.000130
+4971            1.0  1.331809  0.000131
+3206            1.0  0.601113  0.000130
+
+    SIR MODEL RESULTS:
+      Metric:             Final outbreak size
+      Largest outbreak:   User 558 (size=1101.8, rate=95.2%)
+      Smallest outbreak:  User 3965 (size=1.0, rate=0.1%)
+      Mean attack rate:   76.32%
+      Mean R0:            25.39
+      Mean epidemic prob: 80.3%
+
+      Correlations:
+        Strength:         0.5612
+        PageRank:         0.5352
+
+      Top 10 largest outbreaks:
+             final_outbreak  attack_rate     R0  epidemic_probability    strength
+user_id                                                                      
+558             1101.75     0.952247  27.70                   1.0  561.203863
+5368            1100.65     0.951296  15.25                   1.0  286.448353
+6886            1100.55     0.951210  43.55                   1.0  864.667385
+890             1100.30     0.950994  20.35                   1.0  412.159341
+6749            1100.20     0.950908  29.15                   1.0  580.046154
+385             1100.10     0.950821  34.05                   1.0  664.621921
+51              1099.80     0.950562  29.75                   1.0  591.845143
+1792            1099.70     0.950475   1.45                   1.0   29.042160
+3620            1099.70     0.950475  42.15                   1.0  828.394011
+5903            1099.65     0.950432  37.05                   1.0  811.413757
+
+    FILES SAVED:
+      - results/run_20251028_093012/small_matrix_si_influence.csv
+      - results/run_20251028_093012/small_matrix_sir_influence.csv
+      - results/run_20251028_093012/small_matrix_summary.txt
+      - results/run_20251028_093012/small_matrix_plots.png
+      - results/run_20251028_093012/small_matrix_log.txt
+
+    ================================================================================
+    
+[10:20:28] 
+   Generating plots...
+[10:20:29]    ✓ Plots saved: results/run_20251028_093012/small_matrix_plots.png
+[10:20:29] 
+======================================================================
+[10:20:29] ✓✓✓ ALL SIMULATIONS COMPLETED SUCCESSFULLY ✓✓✓
+[10:20:29] ======================================================================
+[10:20:29] End time: 2025-10-28 10:20:29
+[10:20:29] 
+Check results in results/ folder:
+[10:20:29]   - small_matrix_si_influence.csv
+[10:20:29]   - small_matrix_sir_influence.csv
+[10:20:29]   - small_matrix_summary.txt
+[10:20:29]   - small_matrix_plots.png
+[10:20:29] ======================================================================
