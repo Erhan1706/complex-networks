@@ -29,7 +29,7 @@ class BiNetwork:
 
         self.all_connections = full_network
         self.user_features = user_features
-        self.ineraction_df = interaction_df
+        self.interaction_df = interaction_df
         # set a compound network to the same shape as all but empty
 
     def connections_at_t(self, t):
@@ -56,9 +56,9 @@ if __name__ == "__main__":
     df = pd.read_csv(os.path.join('.', 'data', 'raw', 'big_matrix.csv'))
     features = pd.read_csv(os.path.join('.', 'data', 'raw', 'user_features.csv'))
     print(features[features['user_id'] == 2783])
-    network = BiNetwork(df, features)
+    network = BiNetwork(df, features, filter_na_users=True)
     print(network.all_connections)
     print(network.all_connections[network.all_connections['timestamp'].isna()])
-    for i in range(1000):
-        print(network.connections_at_t(i))
+    #for i in range(1000):
+    #    print(network.connections_at_t(i))
 
