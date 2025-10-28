@@ -54,6 +54,8 @@ class LassoReg:
         print('Initializing LassoReg model.')
         possible = self.bi_network.all_connections
         self.user_feature_columns = [col for col in self.user_features.columns if col[:6] == 'onehot']
+        #self.user_feature_columns = ['similar_users_watched']
+
 
         # todo maybe standardizing here is not good
         # standardize user features
@@ -126,7 +128,7 @@ class LassoReg:
         if train_connections.empty:
             return
 
-        train_connections = train_connections.merge(
+        """ train_connections = train_connections.merge(
             self.user_features,
             on='user_id',
             how='left',
@@ -138,10 +140,11 @@ class LassoReg:
             on='video_id',
             how='left',
             suffixes=('', '_video')
-        )
+        ) """
+
         self.add_similarity_feature(train_connections)
-        self.feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
-        self.feature_columns.append('similar_users_watched')
+        #self.feature_columns = [col for col in train_connections.columns if col[:6] == 'onehot']
+        self.feature_columns = ['similar_users_watched']
         X_train = train_connections[self.feature_columns].fillna(0).values
         y_train = train_connections['watch_ratio'].values
         print(f"Training at t={self.t-1} on {X_train.shape[0]} samples with {X_train.shape[1]} features.")
@@ -155,7 +158,7 @@ class LassoReg:
 
         if pred_connections.empty:
             return np.array([]), np.array([])
-        pred_connections = pred_connections.merge(
+        """ pred_connections = pred_connections.merge(
             self.user_features,
             on='user_id',
             how='left',
@@ -167,7 +170,7 @@ class LassoReg:
             on='video_id',
             how='left',
             suffixes=('', '_video')
-        )
+        ) """
         self.add_similarity_feature(pred_connections)
         X_pred = pred_connections[self.feature_columns].fillna(0).values
         print(f"Predicting at t={self.t} on {pred_connections.shape[0]} samples with {len(self.feature_columns)} features.")
