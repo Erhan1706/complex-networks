@@ -44,6 +44,7 @@ class LassoReg:
 
         self.t = 0
         self.rmses = []
+        self.rmse_timesteps = []
 
         self.start_features()
 
@@ -190,12 +191,12 @@ class LassoReg:
         else:
             self.t += 1
 
-        self.rmses = []
         while self.t < stop:
             print(f"Time step {self.t}")
             connections = self.bi_network.connections_at_t(self.t)
             predictions, true = self.predict(connections)
             self.rmses.append(self.eval(predictions, true))
+            self.rmse_timesteps.append(self.t)
             if connections.size != 0:
                 self.step(connections)
                 self.train_step(connections)
