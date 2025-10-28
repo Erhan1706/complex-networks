@@ -176,7 +176,7 @@ class MLPReg:
         print(X_pred)
 
         X_pred_tensor = torch.tensor(X_pred, dtype=torch.float32).to(self.device)
-        predictions = self.model(X_pred_tensor).detach().numpy()
+        predictions = self.model(X_pred_tensor).detach().cpu().numpy()
         print(predictions)
         true = pred_connections['watch_ratio'].values
 
@@ -232,9 +232,9 @@ class MLPReg:
             connections = pd.concat([connections, negative_samples], ignore_index=True)
 
             predictions, true = self.predict(connections)
-            positive_rmes, negative_rmse, rmse = self.eval(predictions, true)
+            positive_rmse, negative_rmse, rmse = self.eval(predictions, true)
             self.rmses.append(rmse)
-            self.positive_rmse.append(positive_rmes)
+            self.positive_rmse.append(positive_rmse)
             self.negative_rmse.append(negative_rmse)
 
             self.rmse_timesteps.append(self.t)

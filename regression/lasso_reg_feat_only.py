@@ -193,6 +193,7 @@ class LassoReg:
         while self.t < stop:
             print(f"Time step {self.t}")
             connections = self.bi_network.connections_at_t(self.t)
+            print(self.reg_model.coef_)
             predictions, true = self.predict(connections)
             self.rmses.append(self.eval(predictions, true))
             self.rmse_timesteps.append(self.t)
@@ -236,7 +237,7 @@ if __name__ == "__main__":
         features = pd.read_csv(os.path.join('..', 'data', 'raw', 'user_features.csv'))
         print('data read in')
 
-        lasso_reg = LassoReg(small_matrix, big_matrix, features, checkpoint_interval=10)
+        lasso_reg = LassoReg(small_matrix, big_matrix, features, checkpoint_interval=100)
         rmses = lasso_reg.train(stop=1100)
         plot_rmse([rmses], ['Lasso Regression'], title='Lasso Regression RMSE over Time')
         print('finished')

@@ -6,9 +6,10 @@ from regression.true_lasso import TrueLasso
 with open('true_lasso_checkpoint_t3500.pkl', 'rb') as f:
     lasso_model = pickle.load(f)
 
-with open('rmses.pkl', 'rb') as f:
-    rmses = pickle.load(f)
+with open('true_lasso_checkpoint_t3000.pkl', 'rb') as f:
+    lasso_model2 = pickle.load(f)
 
-plot_rmse([lasso_model.rmses, rmses], ['True Lasso', 'first try'], title='True Lasso RMSE over Time',
-          smoothing_window=10)
+print(lasso_model2.reg_model.coef_)
+print(lasso_model.reg_model.coef_)
 
+print(lasso_model2.reg_model.coef_ - lasso_model.reg_model.coef_)

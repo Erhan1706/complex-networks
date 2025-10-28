@@ -36,3 +36,9 @@ if __name__ == "__main__":
     #rmse_data_2 = [1.0, 0.85, 0.75, 0.65, 0.55]
     #plot_rmse([rmse_data_1, rmse_data_2], ['Model A', 'Model B'])
     pass
+
+    with open('rmses.pkl', 'rb') as f:
+        rmses = pickle.load(f)
+
+    plot_rmse([rmses[0], rmses[1], rmses[2]], ['negative', 'positive', 'all'],
+              smoothing_window=10)

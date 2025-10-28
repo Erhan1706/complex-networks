@@ -15,6 +15,16 @@ def graph_timestamp_frequencies(network):
 
     return a
 
+def x_frequencies(network, x_col):
+    connections = network.all_connections.copy()
+    connections = connections.dropna()
+    connections = connections[(connections['timestamp'] >= 1000) & (connections['timestamp'] <= 7000)]
+    video_counts = connections[x_col].value_counts()
+    ax = video_counts.plot(kind='hist', bins=50)
+    ax.figure.show()
+
+    return ax
+
 
 def video_saturation(network, n_times=10):
     # plot number of videos that has not been seen 10 times yet over time
@@ -32,6 +42,23 @@ def video_saturation(network, n_times=10):
     return line
 
 
+def video_lifetime(network):
+    # plot the timestep difference between the first time and the last time
+    # a video was seen
+
+    connections = network.all_connections.copy()
+    connections = connections.dropna()
+    connections = connections[connections['timestamp'] >= 1000]
+    connections = connections[connections['timestamp'] <= 7000]
+    video_first = connections.groupby('video_id')['timestamp'].min()
+    video_last = connections.groupby('video_id')['timestamp'].max()
+    video_life = video_last - video_first
+    ax = video_life.plot(kind='hist', bins=50)
+    ax.figure.show()
+    return ax
+
+
+
 if __name__ == "__main__":
     pd.set_option('display.max_columns',  None)
     try:
@@ -44,4 +71,8 @@ if __name__ == "__main__":
     # ax = graph_timestamp_frequencies(network)
     # ax.fig.show()
 
-    line = video_saturation(network, n_times=100)
+    # line = video_saturation(network, n_times=100)
+
+    # ax = video_lifetime(network)
+
+    ax = x_frequencies(network, 'user_id')
