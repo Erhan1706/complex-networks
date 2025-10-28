@@ -182,8 +182,7 @@ class LassoReg:
         # todo more advanced metric that takes the not connected into account?
         # simple RMSE
 
-        mask = ~np.isnan(true)
-        mse = np.mean((predictions[mask] - true[mask]) ** 2)
+        mse = np.mean((predictions - true) ** 2)
         rmse = np.sqrt(mse)
         print(f"RMSE: {rmse}")
 
