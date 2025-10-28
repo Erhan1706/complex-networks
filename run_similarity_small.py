@@ -119,11 +119,14 @@ def measure_si_influence(G, seed, beta, num_runs, max_steps):
         'final_size': np.mean(final_sizes),
     }
 
-def process_si_node(node, G, strength, pagerank, beta, num_runs, max_steps):
+def process_si_node(node, G, strength, pagerank, eigenvector_centrality, approximate_current_flow_betweenness, clustering, beta, num_runs, max_steps):
     """Wrapper function for parallel processing"""
     result = measure_si_influence(G, node, beta, num_runs, max_steps)
     result['strength'] = strength[node]
     result['pagerank'] = pagerank[node]
+    result['eigenvector_centrality'] = eigenvector_centrality[node]
+    result['approximate_current_flow_betweenness'] = approximate_current_flow_betweenness[node]
+    result['clustering'] = clustering[node]
     return node, result
 
 def run_sir(G, seed, beta, gamma, max_steps):
@@ -210,11 +213,14 @@ def measure_sir_influence(G, seed, beta, gamma, num_runs, max_steps):
         'growth_rate': np.mean(early_growth_rates) if early_growth_rates else 0.0,
     }
 
-def process_sir_node(node, G, strength, pagerank, beta, gamma, num_runs, max_steps):
+def process_sir_node(node, G, strength, pagerank, eigenvector_centrality, approximate_current_flow_betweenness, clustering, beta, gamma, num_runs, max_steps):
     """Wrapper function for parallel processing"""
     result = measure_sir_influence(G, node, beta, gamma, num_runs, max_steps)
     result['strength'] = strength[node]
     result['pagerank'] = pagerank[node]
+    result['eigenvector_centrality'] = eigenvector_centrality[node]
+    result['approximate_current_flow_betweenness'] = approximate_current_flow_betweenness[node]
+    result['clustering'] = clustering[node]
     return node, result
 
 # ============================================================================
@@ -324,6 +330,9 @@ def run_simulation():
     start_time = time.time()
     strength = dict(G.degree(weight='weight'))
     pagerank = nx.pagerank(G, weight='weight')
+    eigenvector_centrality = nx.eigenvector_centrality(G, weight='weight', max_iter=1000)
+    approximate_current_flow_betweenness = nx.approximate_current_flow_betweenness_centrality(G, weight='weight')
+    clustering = nx.clustering(G, weight='weight')
     log(f"   ✓ Centrality computed")
     log(f"   Time: {time.time() - start_time:.1f}s")
 
@@ -350,6 +359,9 @@ def run_simulation():
 
     # Create partial function with fixed parameters
     process_func = partial(process_si_node, G=G, strength=strength, pagerank=pagerank,
+                           eigenvector_centrality=eigenvector_centrality,
+                           approximate_current_flow_betweenness=approximate_current_flow_betweenness,
+                           clustering=clustering,
                            beta=BETA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SI)
 
     # Run in parallel
@@ -391,6 +403,9 @@ def run_simulation():
 
     # Create partial function with fixed parameters
     process_func = partial(process_sir_node, G=G, strength=strength, pagerank=pagerank,
+                           eigenvector_centrality=eigenvector_centrality,
+                           approximate_current_flow_betweenness=approximate_current_flow_betweenness,
+                           clustering=clustering,
                            beta=BETA, gamma=GAMMA, num_runs=NUM_RUNS_PER_NODE, max_steps=MAX_STEPS_SIR)
 
     # Run in parallel
