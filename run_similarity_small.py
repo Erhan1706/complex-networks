@@ -80,15 +80,25 @@ def run_si(G, seed, beta, max_steps):
     return counts
 
 def measure_si_influence(G, seed, beta, num_runs, max_steps):
+    threshold_10 = G.number_of_nodes() * 0.1
+    threshold_25 = G.number_of_nodes() * 0.25
     threshold_50 = G.number_of_nodes() * 0.5
     threshold_90 = G.number_of_nodes() * 0.9
 
+    times_to_10 = []
+    times_to_25 = []
     times_to_50 = []
     times_to_90 = []
     final_sizes = []
 
     for _ in range(num_runs):
         counts = run_si(G, seed, beta, max_steps)
+
+        t10 = next((t for t, c in enumerate(counts) if c >= threshold_10), len(counts))
+        times_to_10.append(t10)
+
+        t25 = next((t for t, c in enumerate(counts) if c >= threshold_25), len(counts))
+        times_to_25.append(t25)
 
         t50 = next((t for t, c in enumerate(counts) if c >= threshold_50), len(counts))
         times_to_50.append(t50)
@@ -99,8 +109,12 @@ def measure_si_influence(G, seed, beta, num_runs, max_steps):
         final_sizes.append(counts[-1])
 
     return {
+        'time_to_10': np.mean(times_to_10),
+        'time_to_25': np.mean(times_to_25),
         'time_to_50': np.mean(times_to_50),
         'time_to_90': np.mean(times_to_90),
+        'std_time_10': np.std(times_to_10),
+        'std_time_25': np.std(times_to_25),
         'std_time_50': np.std(times_to_50),
         'final_size': np.mean(final_sizes),
     }
@@ -288,12 +302,22 @@ def run_simulation():
         isolated_nodes = G.number_of_nodes() - len(giant_component)
 
         G = G.subgraph(giant_component).copy()
+
+        # Filter out nodes with degree=0 (isolated within giant component)
+        connected_nodes = [n for n in G.nodes() if G.degree(n) > 0]
+        zero_degree = G.number_of_nodes() - len(connected_nodes)
+
+        if zero_degree > 0:
+            log(f"   Removing {zero_degree} nodes with degree=0 within giant component...")
+            G = G.subgraph(connected_nodes).copy()
+            isolated_nodes += zero_degree
+
         users = list(G.nodes())
 
         total_nodes = G.number_of_nodes() + isolated_nodes
-        log(f"   ✓ Giant component: {G.number_of_nodes():,} nodes ({G.number_of_nodes()/total_nodes*100:.1f}%)")
-        log(f"   Isolated/small components: {isolated_nodes:,} nodes ({isolated_nodes/total_nodes*100:.1f}%)")
-        log(f"   Giant component density: {nx.density(G):.4f}")
+        log(f"   ✓ Connected nodes: {G.number_of_nodes():,} ({G.number_of_nodes()/total_nodes*100:.1f}%)")
+        log(f"   Excluded nodes: {isolated_nodes:,} ({isolated_nodes/total_nodes*100:.1f}%)")
+        log(f"   Network density: {nx.density(G):.4f}")
 
     # Compute centrality
     log("\n2. Computing centrality measures...")
@@ -434,16 +458,20 @@ def run_simulation():
       Runs per node:      {NUM_RUNS_PER_NODE}
 
     SI MODEL RESULTS:
-      Metric:             Time to 50% infection
-      Fastest spreader:   User {si_df.index[0]} (t50={si_df.iloc[0]['time_to_50']:.2f})
-      Slowest spreader:   User {si_df.index[-1]} (t50={si_df.iloc[-1]['time_to_50']:.2f})
+      Spreading Speed Metrics:
+        Time to 10%:      Mean {si_df['time_to_10'].mean():.2f}, Range [{si_df['time_to_10'].min():.2f}, {si_df['time_to_10'].max():.2f}]
+        Time to 25%:      Mean {si_df['time_to_25'].mean():.2f}, Range [{si_df['time_to_25'].min():.2f}, {si_df['time_to_25'].max():.2f}]
+        Time to 50%:      Mean {si_df['time_to_50'].mean():.2f}, Range [{si_df['time_to_50'].min():.2f}, {si_df['time_to_50'].max():.2f}]
 
-      Correlations:
+      Fastest spreader (T-50):   User {si_df.index[0]} (t50={si_df.iloc[0]['time_to_50']:.2f})
+      Slowest spreader (T-50):   User {si_df.index[-1]} (t50={si_df.iloc[-1]['time_to_50']:.2f})
+
+      Correlations (with time to 50%):
         Strength:         {si_corr_strength:.4f} (negative = faster spreading)
         PageRank:         {si_corr_pagerank:.4f}
 
       Top 10 fastest spreaders:
-    {si_df.head(10)[['time_to_50', 'strength', 'pagerank']].to_string()}
+    {si_df.head(10)[['time_to_10', 'time_to_25', 'time_to_50', 'strength', 'pagerank']].to_string()}
 
     SIR MODEL RESULTS:
       Metric:             Final outbreak size
@@ -477,21 +505,30 @@ def run_simulation():
 
     # Generate plots
     log("\n   Generating plots...")
-    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 
-    # SI: Time to 50% vs Strength
-    axes[0, 0].scatter(si_df['strength'], si_df['time_to_50'], alpha=0.4, s=20)
+    # SI: Time to 10% vs Strength
+    si_corr_t10 = si_df['time_to_10'].corr(si_df['strength'])
+    axes[0, 0].scatter(si_df['strength'], si_df['time_to_10'], alpha=0.4, s=20)
     axes[0, 0].set_xlabel('Strength')
-    axes[0, 0].set_ylabel('Time to 50% Infection')
-    axes[0, 0].set_title(f'SI: Spreading Speed vs Strength (r={si_corr_strength:.3f})')
+    axes[0, 0].set_ylabel('Time to 10% Infection')
+    axes[0, 0].set_title(f'SI: T-10 vs Strength (r={si_corr_t10:.3f})')
     axes[0, 0].grid(alpha=0.3)
 
-    # SI: Distribution of times
-    axes[0, 1].hist(si_df['time_to_50'], bins=50, alpha=0.7, edgecolor='black')
-    axes[0, 1].set_xlabel('Time to 50% Infection')
-    axes[0, 1].set_ylabel('Frequency')
-    axes[0, 1].set_title(f'SI: Distribution of Spreading Times')
+    # SI: Time to 25% vs Strength
+    si_corr_t25 = si_df['time_to_25'].corr(si_df['strength'])
+    axes[0, 1].scatter(si_df['strength'], si_df['time_to_25'], alpha=0.4, s=20)
+    axes[0, 1].set_xlabel('Strength')
+    axes[0, 1].set_ylabel('Time to 25% Infection')
+    axes[0, 1].set_title(f'SI: T-25 vs Strength (r={si_corr_t25:.3f})')
     axes[0, 1].grid(alpha=0.3)
+
+    # SI: Time to 50% vs Strength
+    axes[0, 2].scatter(si_df['strength'], si_df['time_to_50'], alpha=0.4, s=20)
+    axes[0, 2].set_xlabel('Strength')
+    axes[0, 2].set_ylabel('Time to 50% Infection')
+    axes[0, 2].set_title(f'SI: T-50 vs Strength (r={si_corr_strength:.3f})')
+    axes[0, 2].grid(alpha=0.3)
 
     # SIR: Outbreak size vs Strength
     axes[1, 0].scatter(sir_df['strength'], sir_df['final_outbreak'], alpha=0.4, s=20)
@@ -506,6 +543,15 @@ def run_simulation():
     axes[1, 1].set_ylabel('Frequency')
     axes[1, 1].set_title(f'SIR: Distribution of Attack Rates (mean={sir_df["attack_rate"].mean()*100:.1f}%)')
     axes[1, 1].grid(alpha=0.3)
+
+    # SI: Comparison of T-10, T-25, T-50 distributions
+    axes[1, 2].hist([si_df['time_to_10'], si_df['time_to_25'], si_df['time_to_50']],
+                    bins=30, alpha=0.6, label=['T-10', 'T-25', 'T-50'], edgecolor='black')
+    axes[1, 2].set_xlabel('Time Steps')
+    axes[1, 2].set_ylabel('Frequency')
+    axes[1, 2].set_title('SI: Spreading Time Distributions')
+    axes[1, 2].legend()
+    axes[1, 2].grid(alpha=0.3)
 
     plt.tight_layout()
     plt.savefig(f'{RESULTS_DIR}/small_matrix_plots.png', dpi=150, bbox_inches='tight')
