@@ -32,13 +32,13 @@ DATA_FILE = 'data/raw/small_matrix.csv'  # SMALL matrix
 # Create timestamped results directory
 TIMESTAMP = datetime.now().strftime('%Y%m%d_%H%M%S')
 RESULTS_DIR = f'results/run_{TIMESTAMP}'
-BETA = 0.2  # Changed from 0.3
+BETA = 0.05  # Changed from 0.3
 GAMMA = 0.15  # Changed from 0.1
-NUM_RUNS_PER_NODE = 10  # Runs per node for statistics
-MAX_STEPS_SI = 50
-MAX_STEPS_SIR = 100
-SIMILARITY_THRESHOLD = 0.3  # Only connect users with similarity >= this
-SAMPLE_SIZE = 1000  # Number of nodes to simulate (set to None for all nodes)
+NUM_RUNS_PER_NODE = 20  # Runs per node for statistics
+MAX_STEPS_SI = 200
+MAX_STEPS_SIR = 300
+SIMILARITY_THRESHOLD = 0.7  # Only connect users with similarity >= this
+SAMPLE_SIZE = None  # Number of nodes to simulate (set to None for all nodes)
 NUM_PROCESSES = max(1, cpu_count() - 1)  # Use all cores except one
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
