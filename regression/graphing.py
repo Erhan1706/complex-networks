@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 
 
-def plot_rmse(rmse_series, series_labels, title='RMSE over Time', xlabel='Time Step', ylabel='RMSE'):
+def plot_rmse(rmse_series, series_labels, title='RMSE over Time', xlabel='Time Step', ylabel='RMSE',
+              max_n_ticks=20):
 
     plt.figure(figsize=(10, 6))
     for rmse_values, label in zip(rmse_series, series_labels):
@@ -10,7 +11,13 @@ def plot_rmse(rmse_series, series_labels, title='RMSE over Time', xlabel='Time S
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.xticks(range(len(rmse_series[0])))
+    all_ticks = len(rmse_series[0])
+    if all_ticks > max_n_ticks:
+        step = all_ticks // max_n_ticks
+        plt.xticks(range(0, all_ticks, step))
+    else:
+        plt.xticks(range(all_ticks))
+    plt.legend()
     plt.show()
 
 
