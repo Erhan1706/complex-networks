@@ -95,6 +95,7 @@ class MLPCat:
             old_features = self.user_video_categories.loc[user_id]
             new_features = (1-row[self.feature_columns]) * old_features + row[self.feature_columns]
             self.user_video_categories.loc[user_id, self.feature_columns] = new_features
+        self.t += 1
 
     def train_step(self, train_connections):
         self.model.train(True)
