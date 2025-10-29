@@ -3,13 +3,24 @@ from graphing import plot_rmse
 from regression.true_lasso import TrueLasso
 
 
-with open('true_lasso_checkpoint_t3500.pkl', 'rb') as f:
-    lasso_model = pickle.load(f)
+def graph_files(file_list, labels, is_model, smoothing_window=10):
+    rmse_series = []
+    for i, file in enumerate(file_list):
+        with open(file, 'rb') as f:
+            model = pickle.load(f)
+            if is_model[i]:
+                rmse_series.append(model.rmse_history)
+            else:
+                if len(model) > 1:
+                    for sub_list in model:
+                        rmse_series.append(sub_list)
+                else:
+                    rmse_series.append(model)
 
-with open('true_lasso_checkpoint_t3000.pkl', 'rb') as f:
-    lasso_model2 = pickle.load(f)
+    plot_rmse(rmse_series, labels, smoothing_window=smoothing_window)
 
-print(lasso_model2.reg_model.coef_)
-print(lasso_model.reg_model.coef_)
 
-print(lasso_model2.reg_model.coef_ - lasso_model.reg_model.coef_)
+if __name__ == "__main__":
+    graph_files(['rmses.pkl', 'rmses_b7.pkl'], ['small_negativ', 'small_positive', 'small_all',
+                                                     'big_negative', 'big_positive', 'big_all'],
+                [False, False], smoothing_window=100)
