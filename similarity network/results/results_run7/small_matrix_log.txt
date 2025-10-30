@@ -1,0 +1,167 @@
+[16:18:00] ======================================================================
+[16:18:00] OVERNIGHT SI/SIR SIMULATION - SMALL MATRIX
+[16:18:00] ======================================================================
+[16:18:00] Data file: C:\Users\diede\Documents\Complex Networks\complex-networks\data\small_matrix.csv
+[16:18:00] Parameters: β=0.02, γ=0.15, runs=20
+[16:18:00] Similarity threshold: 0.6
+[16:18:00] Parallel processes: 23 (out of 24 CPUs)
+[16:18:00] Start time: 2025-10-28 16:18:00
+[16:18:00] ======================================================================
+[16:18:00] 
+1. Loading data and building network...
+[16:18:03]    Loaded 4,676,570 interactions
+[16:18:03]    Unique users: 1,411
+[16:18:03]    Unique videos: 3,327
+[16:18:03]    Creating user-video matrix...
+[16:18:04]    Matrix shape: 1,411 × 3,327
+[16:18:04]    Computing similarity matrix...
+[16:18:04]    Building graph...
+[16:18:04]    Adding edges: 0/1411 users processed (0 edges so far)
+[16:18:04]    Adding edges: 100/1411 users processed (58,129 edges so far)
+[16:18:05]    Adding edges: 200/1411 users processed (116,053 edges so far)
+[16:18:05]    Adding edges: 300/1411 users processed (168,911 edges so far)
+[16:18:06]    Adding edges: 400/1411 users processed (217,464 edges so far)
+[16:18:06]    Adding edges: 500/1411 users processed (265,213 edges so far)
+[16:18:07]    Adding edges: 600/1411 users processed (306,942 edges so far)
+[16:18:07]    Adding edges: 700/1411 users processed (344,516 edges so far)
+[16:18:07]    Adding edges: 800/1411 users processed (374,574 edges so far)
+[16:18:07]    Adding edges: 900/1411 users processed (398,120 edges so far)
+[16:18:08]    Adding edges: 1000/1411 users processed (420,105 edges so far)
+[16:18:08]    Adding edges: 1100/1411 users processed (438,752 edges so far)
+[16:18:08]    Adding edges: 1200/1411 users processed (450,526 edges so far)
+[16:18:08]    Adding edges: 1300/1411 users processed (457,128 edges so far)
+[16:18:08]    Adding edges: 1400/1411 users processed (459,950 edges so far)
+[16:18:08]    ✓ Network built: 1,411 nodes, 459,989 edges
+[16:18:08]    Mean similarity: 0.7581
+[16:18:08]    Density: 0.4624
+[16:18:08]    Time: 8.5s
+[16:18:08] 
+   Extracting giant component...
+[16:18:09]    ✓ Connected nodes: 1,157 (82.0%)
+[16:18:09]    Excluded nodes: 254 (18.0%)
+[16:18:09]    Network density: 0.6878
+[16:18:09] 
+2. Computing centrality measures...
+[16:25:22]    ✓ Centrality computed
+[16:25:22]    Time: 432.2s
+[16:25:22] 
+   Using all 1157 nodes (no sampling)
+[16:25:22] 
+======================================================================
+[16:25:22] 3. RUNNING SI MODEL
+[16:25:22] ======================================================================
+[16:25:22]    Running 1157 nodes × 20 simulations...
+[16:25:22]    Using 23 parallel processes
+[16:49:53]    ✓ Completed 1157 nodes in 24.5 minutes
+[16:50:01]    ✓ SI results saved: results/run_20251028_161800/small_matrix_si_influence.csv
+[16:50:01]    Total time: 24.7 minutes
+[16:50:01] 
+======================================================================
+[16:50:01] 4. RUNNING SIR MODEL
+[16:50:01] ======================================================================
+[16:50:01]    Running 1157 nodes × 20 simulations...
+[16:50:01]    Using 23 parallel processes
+[17:11:36]    ✓ Completed 1157 nodes in 21.6 minutes
+[17:11:46]    ✓ SIR results saved: results/run_20251028_161800/small_matrix_sir_influence.csv
+[17:11:46]    Total time: 21.8 minutes
+[17:11:46] 
+======================================================================
+[17:11:46] 5. GENERATING SUMMARY AND PLOTS
+[17:11:46] ======================================================================
+[17:11:46] 
+
+    ================================================================================
+    OVERNIGHT SIMULATION RESULTS - SMALL MATRIX
+    ================================================================================
+    Completed: 2025-10-28 17:11:46
+
+    NETWORK PROPERTIES:
+      Nodes analyzed:     1,157 (giant component)
+      Edges:              459,984
+      Density:            0.6878
+      Mean similarity:    0.7581
+      Isolated nodes:     254 (18.0% excluded)
+
+    PARAMETERS:
+      Beta (β):           0.02
+      Gamma (γ):          0.15
+      Similarity thresh:  0.6
+      Runs per node:      20
+
+    SI MODEL RESULTS:
+      Spreading Speed Metrics:
+        Time to 10%:      Mean 2.04, Range [1.00, 3.00]
+        Time to 25%:      Mean 2.79, Range [1.00, 3.20]
+        Time to 50%:      Mean 2.88, Range [1.00, 3.75]
+
+      Fastest spreader (T-50):   User 136 (t50=1.00)
+      Slowest spreader (T-50):   User 6384 (t50=3.75)
+
+      Correlations (with time to 50%):
+        Strength:         0.5734 (negative = faster spreading)
+        PageRank:         0.5452
+
+      Top 10 fastest spreaders:
+             time_to_10  time_to_25  time_to_50  strength  pagerank
+user_id                                                        
+136             1.0         1.0         1.0  0.644108  0.000131
+172             1.0         1.0         1.0  1.314236  0.000132
+7007            1.0         1.0         1.0  0.607002  0.000226
+6871            1.0         1.0         1.0  1.284269  0.000131
+6806            1.0         1.0         1.0  0.682969  0.000144
+6330            1.0         1.0         1.0  0.600626  0.000131
+6435            1.0         1.0         1.0  1.221084  0.000131
+6661            1.0         1.0         1.0  0.606517  0.000130
+6356            1.0         1.0         1.0  0.662870  0.000131
+5861            1.0         1.0         1.0  0.674666  0.000131
+
+    SIR MODEL RESULTS:
+      Metric:             Final outbreak size
+      Largest outbreak:   User 3529 (size=1087.0, rate=94.0%)
+      Smallest outbreak:  User 6661 (size=1.0, rate=0.1%)
+      Mean attack rate:   74.80%
+      Mean R0:            10.15
+      Mean epidemic prob: 79.7%
+
+      Correlations:
+        Strength:         0.6177
+        PageRank:         0.5898
+
+      Top 10 largest outbreaks:
+             final_outbreak  attack_rate     R0  epidemic_probability    strength
+user_id                                                                      
+3529            1087.05     0.939542  14.30                   1.0  766.681681
+1647            1087.00     0.939499  13.15                   1.0  691.071479
+224             1086.95     0.939455   9.75                   1.0  514.014428
+3341            1086.80     0.939326  15.40                   1.0  804.352475
+2486            1086.75     0.939283  16.35                   1.0  764.083775
+6093            1086.75     0.939283  19.05                   1.0  839.420870
+3615            1086.70     0.939239  16.25                   1.0  818.703782
+3764            1086.65     0.939196  12.50                   1.0  731.484223
+1033            1086.65     0.939196   8.35                   1.0  440.179450
+6648            1086.65     0.939196  14.95                   1.0  753.878677
+
+    FILES SAVED:
+      - results/run_20251028_161800/small_matrix_si_influence.csv
+      - results/run_20251028_161800/small_matrix_sir_influence.csv
+      - results/run_20251028_161800/small_matrix_summary.txt
+      - results/run_20251028_161800/small_matrix_plots.png
+      - results/run_20251028_161800/small_matrix_log.txt
+
+    ================================================================================
+    
+[17:11:46] 
+   Generating plots...
+[17:11:47]    ✓ Plots saved: results/run_20251028_161800/small_matrix_plots.png
+[17:11:47] 
+======================================================================
+[17:11:47] ✓✓✓ ALL SIMULATIONS COMPLETED SUCCESSFULLY ✓✓✓
+[17:11:47] ======================================================================
+[17:11:47] End time: 2025-10-28 17:11:47
+[17:11:47] 
+Check results in results/ folder:
+[17:11:47]   - small_matrix_si_influence.csv
+[17:11:47]   - small_matrix_sir_influence.csv
+[17:11:47]   - small_matrix_summary.txt
+[17:11:47]   - small_matrix_plots.png
+[17:11:47] ======================================================================

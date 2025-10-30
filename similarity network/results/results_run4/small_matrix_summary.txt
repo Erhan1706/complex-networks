@@ -1,0 +1,61 @@
+
+    ================================================================================
+                          SIMILARITY NETWORK INFLUENCE ANALYSIS
+                                   (Post-Run Analysis)
+    ================================================================================
+
+    ANALYSIS DIRECTORY: results_run4
+    ANALYSIS TIME: 2025-10-28 10:42:00
+
+    ================================================================================
+    SI MODEL RESULTS (Spreading Speed - Time to 50% Infection)
+    ================================================================================
+
+    Correlations with Time to 50% (negative = faster spread):
+      • Strength:       0.8196
+      • PageRank:       0.7879
+
+    Distribution Statistics:
+      • Mean time to 50%:     2.39 steps
+      • Std time to 50%:      1.37 steps
+      • Median time to 50%:   2.90 steps
+      • Min time to 50%:      1.00 steps
+      • Max time to 50%:      4.10 steps
+
+    ================================================================================
+    SIR MODEL RESULTS (Epidemic Size - Final Outbreak)
+    ================================================================================
+
+    Correlations with Final Outbreak Size:
+      • Strength:       0.8480
+      • PageRank:       0.8195
+
+    Correlations with R0:
+      • Strength:       0.9900
+      • PageRank:       0.9738
+
+    Outbreak Statistics:
+      • Mean final outbreak:  315.62 nodes
+      • Mean attack rate:     22.37%
+      • Mean epidemic prob:   43.31%
+      • Mean R0:              8.488
+      • Mean peak infection:  278.03 nodes
+      • Mean time to peak:    1.38 steps
+      • Mean duration:        24.92 steps
+
+    ================================================================================
+    KEY FINDINGS
+    ================================================================================
+
+    Most influential metric for SI spreading speed:
+      → Strength (r = 0.8196)
+
+    Most influential metric for SIR outbreak size:
+      → Strength (r = 0.8480)
+
+    FILES SAVED:
+      - results_run4/small_matrix_summary.txt
+      - results_run4/small_matrix_plots.png
+
+    ================================================================================
+    

@@ -43,3 +43,10 @@ Thumbs.db
 # Data (if you have large datasets locally)
 data/raw/*
 !data/raw/.gitkeep
+notebooks/data/social_network.csv
+notebooks/data/item_categories.csv
+notebooks/data/item_daily_features.csv
+notebooks/data/kuairec_caption_category.csv
+notebooks/data/raw/big_matrix.csv
+notebooks/data/raw/small_matrix.csv
+notebooks/data/user_features.csv

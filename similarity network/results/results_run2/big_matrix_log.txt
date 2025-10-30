@@ -1,0 +1,123 @@
+[21:59:17] ======================================================================
+[21:59:17] OVERNIGHT SI/SIR SIMULATION - BIG MATRIX
+[21:59:17] ======================================================================
+[21:59:17] Data file: C:\Users\diede\Documents\Complex Networks\complex-networks\data\big_matrix.csv
+[21:59:17] Parameters: β=0.2, γ=0.15, runs=10
+[21:59:17] Similarity threshold: 0.3
+[21:59:17] Parallel processes: 23 (out of 24 CPUs)
+[21:59:17] Start time: 2025-10-21 21:59:17
+[21:59:17] ======================================================================
+[21:59:17] 
+1. Loading data and building network...
+[21:59:26]    Loaded 12,530,806 interactions
+[21:59:26]    Unique users: 7,176
+[21:59:26]    Unique videos: 10,728
+[21:59:26]    Creating user-video matrix...
+[21:59:29]    Matrix shape: 7,176 × 10,728
+[21:59:29]    Computing similarity matrix...
+[21:59:31]    Building graph...
+[21:59:31]    Adding edges: 0/7176 users processed (0 edges so far)
+[21:59:34]    Adding edges: 100/7176 users processed (95,522 edges so far)
+[21:59:37]    Adding edges: 200/7176 users processed (200,440 edges so far)
+[21:59:40]    Adding edges: 300/7176 users processed (290,609 edges so far)
+[21:59:42]    Adding edges: 400/7176 users processed (393,148 edges so far)
+[21:59:45]    Adding edges: 500/7176 users processed (498,879 edges so far)
+[21:59:48]    Adding edges: 600/7176 users processed (600,588 edges so far)
+[21:59:50]    Adding edges: 700/7176 users processed (688,020 edges so far)
+[21:59:53]    Adding edges: 800/7176 users processed (773,868 edges so far)
+[21:59:55]    Adding edges: 900/7176 users processed (863,321 edges so far)
+[21:59:58]    Adding edges: 1000/7176 users processed (953,781 edges so far)
+[22:00:00]    Adding edges: 1100/7176 users processed (1,007,127 edges so far)
+[22:00:03]    Adding edges: 1200/7176 users processed (1,079,161 edges so far)
+[22:00:05]    Adding edges: 1300/7176 users processed (1,167,298 edges so far)
+[22:00:08]    Adding edges: 1400/7176 users processed (1,259,343 edges so far)
+[22:00:10]    Adding edges: 1500/7176 users processed (1,333,710 edges so far)
+[22:00:12]    Adding edges: 1600/7176 users processed (1,427,838 edges so far)
+[22:00:14]    Adding edges: 1700/7176 users processed (1,513,494 edges so far)
+[22:00:16]    Adding edges: 1800/7176 users processed (1,578,827 edges so far)
+[22:00:19]    Adding edges: 1900/7176 users processed (1,650,721 edges so far)
+[22:00:21]    Adding edges: 2000/7176 users processed (1,726,466 edges so far)
+[22:00:23]    Adding edges: 2100/7176 users processed (1,786,991 edges so far)
+[22:00:25]    Adding edges: 2200/7176 users processed (1,859,333 edges so far)
+[22:00:27]    Adding edges: 2300/7176 users processed (1,925,256 edges so far)
+[22:00:29]    Adding edges: 2400/7176 users processed (1,986,046 edges so far)
+[22:00:30]    Adding edges: 2500/7176 users processed (2,037,212 edges so far)
+[22:00:32]    Adding edges: 2600/7176 users processed (2,109,195 edges so far)
+[22:00:34]    Adding edges: 2700/7176 users processed (2,166,341 edges so far)
+[22:00:36]    Adding edges: 2800/7176 users processed (2,216,192 edges so far)
+[22:00:37]    Adding edges: 2900/7176 users processed (2,284,627 edges so far)
+[22:00:39]    Adding edges: 3000/7176 users processed (2,339,635 edges so far)
+[22:00:41]    Adding edges: 3100/7176 users processed (2,396,979 edges so far)
+[22:00:42]    Adding edges: 3200/7176 users processed (2,455,937 edges so far)
+[22:00:44]    Adding edges: 3300/7176 users processed (2,509,949 edges so far)
+[22:00:46]    Adding edges: 3400/7176 users processed (2,572,166 edges so far)
+[22:00:47]    Adding edges: 3500/7176 users processed (2,620,870 edges so far)
+[22:00:49]    Adding edges: 3600/7176 users processed (2,682,167 edges so far)
+[22:00:50]    Adding edges: 3700/7176 users processed (2,737,018 edges so far)
+[22:00:51]    Adding edges: 3800/7176 users processed (2,773,972 edges so far)
+[22:00:53]    Adding edges: 3900/7176 users processed (2,816,788 edges so far)
+[22:00:54]    Adding edges: 4000/7176 users processed (2,862,594 edges so far)
+[22:00:55]    Adding edges: 4100/7176 users processed (2,910,475 edges so far)
+[22:00:56]    Adding edges: 4200/7176 users processed (2,952,060 edges so far)
+[22:00:58]    Adding edges: 4300/7176 users processed (2,990,599 edges so far)
+[22:00:59]    Adding edges: 4400/7176 users processed (3,034,660 edges so far)
+[22:01:00]    Adding edges: 4500/7176 users processed (3,075,243 edges so far)
+[22:01:01]    Adding edges: 4600/7176 users processed (3,120,086 edges so far)
+[22:01:02]    Adding edges: 4700/7176 users processed (3,157,355 edges so far)
+[22:01:03]    Adding edges: 4800/7176 users processed (3,192,641 edges so far)
+[22:01:04]    Adding edges: 4900/7176 users processed (3,224,505 edges so far)
+[22:01:05]    Adding edges: 5000/7176 users processed (3,257,747 edges so far)
+[22:01:05]    Adding edges: 5100/7176 users processed (3,283,625 edges so far)
+[22:01:06]    Adding edges: 5200/7176 users processed (3,311,729 edges so far)
+[22:01:07]    Adding edges: 5300/7176 users processed (3,335,631 edges so far)
+[22:01:08]    Adding edges: 5400/7176 users processed (3,364,574 edges so far)
+[22:01:08]    Adding edges: 5500/7176 users processed (3,386,683 edges so far)
+[22:01:09]    Adding edges: 5600/7176 users processed (3,406,998 edges so far)
+[22:01:10]    Adding edges: 5700/7176 users processed (3,424,285 edges so far)
+[22:01:10]    Adding edges: 5800/7176 users processed (3,445,596 edges so far)
+[22:01:11]    Adding edges: 5900/7176 users processed (3,462,196 edges so far)
+[22:01:11]    Adding edges: 6000/7176 users processed (3,479,986 edges so far)
+[22:01:12]    Adding edges: 6100/7176 users processed (3,493,592 edges so far)
+[22:01:12]    Adding edges: 6200/7176 users processed (3,507,713 edges so far)
+[22:01:12]    Adding edges: 6300/7176 users processed (3,517,210 edges so far)
+[22:01:13]    Adding edges: 6400/7176 users processed (3,530,108 edges so far)
+[22:01:13]    Adding edges: 6500/7176 users processed (3,539,011 edges so far)
+[22:01:13]    Adding edges: 6600/7176 users processed (3,546,138 edges so far)
+[22:01:14]    Adding edges: 6700/7176 users processed (3,553,391 edges so far)
+[22:01:14]    Adding edges: 6800/7176 users processed (3,560,150 edges so far)
+[22:01:14]    Adding edges: 6900/7176 users processed (3,564,930 edges so far)
+[22:01:14]    Adding edges: 7000/7176 users processed (3,568,951 edges so far)
+[22:01:14]    Adding edges: 7100/7176 users processed (3,570,937 edges so far)
+[22:01:15]    ✓ Network built: 7,176 nodes, 3,571,388 edges
+[22:01:15]    Mean similarity: 0.3970
+[22:01:15]    Density: 0.1387
+[22:01:15]    Time: 117.6s
+[22:01:15] 
+2. Computing centrality measures...
+[22:01:21]    ✓ Centrality computed
+[22:01:21]    Time: 6.1s
+[22:01:21] 
+   Sampling 1000 nodes from 7176 total nodes...
+[22:01:21]    ✓ Sampled 1000 nodes
+[22:01:21] 
+======================================================================
+[22:01:21] 3. RUNNING SI MODEL
+[22:01:21] ======================================================================
+[22:01:21]    Running 1000 nodes × 10 simulations...
+[22:01:21]    Using 23 parallel processes
+[02:40:45]    ✓ Completed 1000 nodes in 279.4 minutes
+[02:40:55]    ✓ SI results saved: results/run_20251021_215917/big_matrix_si_influence.csv
+[02:40:55]    Total time: 279.6 minutes
+[02:40:55] 
+======================================================================
+[02:40:55] 4. RUNNING SIR MODEL
+[02:40:55] ======================================================================
+[02:40:55]    Running 1000 nodes × 10 simulations...
+[02:40:55]    Using 23 parallel processes
+[06:38:32]    ✓ Completed 1000 nodes in 237.6 minutes
+[06:38:48]    ✓ SIR results saved: results/run_20251021_215917/big_matrix_sir_influence.csv
+[06:38:48]    Total time: 237.9 minutes
+[06:38:48] 
+======================================================================
+[06:38:48] 5. GENERATING SUMMARY AND PLOTS
+[06:38:48] ======================================================================

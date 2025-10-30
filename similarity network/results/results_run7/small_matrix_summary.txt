@@ -1,0 +1,81 @@
+
+    ================================================================================
+    OVERNIGHT SIMULATION RESULTS - SMALL MATRIX
+    ================================================================================
+    Completed: 2025-10-28 17:11:46
+
+    NETWORK PROPERTIES:
+      Nodes analyzed:     1,157 (giant component)
+      Edges:              459,984
+      Density:            0.6878
+      Mean similarity:    0.7581
+      Isolated nodes:     254 (18.0% excluded)
+
+    PARAMETERS:
+      Beta (β):           0.02
+      Gamma (γ):          0.15
+      Similarity thresh:  0.6
+      Runs per node:      20
+
+    SI MODEL RESULTS:
+      Spreading Speed Metrics:
+        Time to 10%:      Mean 2.04, Range [1.00, 3.00]
+        Time to 25%:      Mean 2.79, Range [1.00, 3.20]
+        Time to 50%:      Mean 2.88, Range [1.00, 3.75]
+
+      Fastest spreader (T-50):   User 136 (t50=1.00)
+      Slowest spreader (T-50):   User 6384 (t50=3.75)
+
+      Correlations (with time to 50%):
+        Strength:         0.5734 (negative = faster spreading)
+        PageRank:         0.5452
+
+      Top 10 fastest spreaders:
+             time_to_10  time_to_25  time_to_50  strength  pagerank
+user_id                                                        
+136             1.0         1.0         1.0  0.644108  0.000131
+172             1.0         1.0         1.0  1.314236  0.000132
+7007            1.0         1.0         1.0  0.607002  0.000226
+6871            1.0         1.0         1.0  1.284269  0.000131
+6806            1.0         1.0         1.0  0.682969  0.000144
+6330            1.0         1.0         1.0  0.600626  0.000131
+6435            1.0         1.0         1.0  1.221084  0.000131
+6661            1.0         1.0         1.0  0.606517  0.000130
+6356            1.0         1.0         1.0  0.662870  0.000131
+5861            1.0         1.0         1.0  0.674666  0.000131
+
+    SIR MODEL RESULTS:
+      Metric:             Final outbreak size
+      Largest outbreak:   User 3529 (size=1087.0, rate=94.0%)
+      Smallest outbreak:  User 6661 (size=1.0, rate=0.1%)
+      Mean attack rate:   74.80%
+      Mean R0:            10.15
+      Mean epidemic prob: 79.7%
+
+      Correlations:
+        Strength:         0.6177
+        PageRank:         0.5898
+
+      Top 10 largest outbreaks:
+             final_outbreak  attack_rate     R0  epidemic_probability    strength
+user_id                                                                      
+3529            1087.05     0.939542  14.30                   1.0  766.681681
+1647            1087.00     0.939499  13.15                   1.0  691.071479
+224             1086.95     0.939455   9.75                   1.0  514.014428
+3341            1086.80     0.939326  15.40                   1.0  804.352475
+2486            1086.75     0.939283  16.35                   1.0  764.083775
+6093            1086.75     0.939283  19.05                   1.0  839.420870
+3615            1086.70     0.939239  16.25                   1.0  818.703782
+3764            1086.65     0.939196  12.50                   1.0  731.484223
+1033            1086.65     0.939196   8.35                   1.0  440.179450
+6648            1086.65     0.939196  14.95                   1.0  753.878677
+
+    FILES SAVED:
+      - results/run_20251028_161800/small_matrix_si_influence.csv
+      - results/run_20251028_161800/small_matrix_sir_influence.csv
+      - results/run_20251028_161800/small_matrix_summary.txt
+      - results/run_20251028_161800/small_matrix_plots.png
+      - results/run_20251028_161800/small_matrix_log.txt
+
+    ================================================================================
+    
